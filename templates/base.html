@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Cuervo Negro{% endblock %} | Barber & Tattoo</title>
+
+    <!-- Google Fonts: Bebas Neue + Rajdhani -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 Dark CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --cn-bg: #0a0a0a;
+            --cn-surface: #111111;
+            --cn-surface2: #1a1a1a;
+            --cn-border: #2a2a2a;
+            --cn-accent: #c8a951;       /* Dorado oscuro */
+            --cn-accent2: #8b1a1a;      /* Rojo sangre */
+            --cn-accent3: #4a4a6a;      /* Morado oscuro */
+            --cn-text: #e8e0d0;
+            --cn-text-muted: #7a7060;
+            --cn-skull: #d4c5a9;
+            --cn-font-display: 'Bebas Neue', sans-serif;
+            --cn-font-body: 'Rajdhani', sans-serif;
+            --cn-font-mono: 'Share Tech Mono', monospace;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background-color: var(--cn-bg);
+            color: var(--cn-text);
+            font-family: var(--cn-font-body);
+            font-size: 16px;
+            font-weight: 500;
+            background-image:
+                radial-gradient(ellipse at 20% 50%, rgba(139,26,26,0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(74,74,106,0.05) 0%, transparent 50%);
+            min-height: 100vh;
+        }
+
+        /* NAVBAR */
+        .navbar-cn {
+            background: linear-gradient(180deg, #0d0d0d 0%, #111111 100%);
+            border-bottom: 1px solid var(--cn-accent);
+            padding: 0.5rem 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 1050;
+            box-shadow: 0 4px 20px rgba(200,169,81,0.15);
+        }
+
+        .navbar-brand-cn {
+            font-family: var(--cn-font-display);
+            font-size: 1.8rem;
+            letter-spacing: 3px;
+            color: var(--cn-accent) !important;
+            text-decoration: none;
+            text-shadow: 0 0 20px rgba(200,169,81,0.4);
+            line-height: 1;
+        }
+        .navbar-brand-cn span { color: var(--cn-accent2); }
+
+        .navbar-brand-cn small {
+            display: block;
+            font-family: var(--cn-font-mono);
+            font-size: 0.5rem;
+            letter-spacing: 4px;
+            color: var(--cn-text-muted);
+            text-shadow: none;
+        }
+
+        .nav-link-cn {
+            color: var(--cn-text-muted) !important;
+            font-family: var(--cn-font-body);
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-size: 0.82rem;
+            padding: 0.6rem 1rem !important;
+            transition: all 0.25s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link-cn:hover,
+        .nav-link-cn.active {
+            color: var(--cn-accent) !important;
+            border-bottom-color: var(--cn-accent);
+        }
+        .nav-link-cn i { margin-right: 5px; font-size: 0.9rem; }
+
+        /* NOTIFICACIONES — botón campana */
+        .notif-btn {
+            position: relative; background: none; border: 1px solid var(--cn-border);
+            color: var(--cn-text-muted); border-radius: 2px; padding: 0.3rem 0.55rem;
+            cursor: pointer; transition: all 0.2s; line-height: 1;
+        }
+        .notif-btn:hover { border-color: var(--cn-accent); color: var(--cn-accent); }
+        .notif-badge {
+            position: absolute; top: -6px; right: -6px;
+            background: var(--cn-accent2); color: #fff;
+            font-size: 0.6rem; font-family: var(--cn-font-mono);
+            border-radius: 50%; width: 16px; height: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; border: 1px solid var(--cn-bg);
+        }
+
+        /* MODAL NOTIFICACIONES */
+        .notif-modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.7); z-index: 3000;
+            align-items: flex-start; justify-content: flex-end;
+            padding: 70px 1rem 1rem;
+        }
+        .notif-modal-overlay.open { display: flex; }
+        @media (max-width: 575px) {
+            .notif-modal-overlay {
+                align-items: flex-end; justify-content: stretch;
+                padding: 0;
+            }
+            .notif-modal-box { border-radius: 12px 12px 0 0 !important; max-height: 85vh !important; width: 100% !important; }
+        }
+        .notif-modal-box {
+            background: var(--cn-surface);
+            border: 1px solid var(--cn-accent);
+            border-radius: 4px;
+            width: 380px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 12px 48px rgba(0,0,0,0.8), 0 0 0 1px rgba(200,169,81,0.1);
+            animation: notifSlideIn 0.25s cubic-bezier(.22,1,.36,1);
+        }
+        @keyframes notifSlideIn {
+            from { opacity:0; transform: translateY(-12px) scale(0.97); }
+            to   { opacity:1; transform: translateY(0) scale(1); }
+        }
+        @media (max-width: 575px) {
+            @keyframes notifSlideIn {
+                from { opacity:0; transform: translateY(40px); }
+                to   { opacity:1; transform: translateY(0); }
+            }
+        }
+        .notif-modal-header {
+            display: flex; align-items: center; gap: 0.6rem;
+            padding: 0.85rem 1.1rem;
+            border-bottom: 1px solid var(--cn-accent);
+            background: rgba(200,169,81,0.05);
+            flex-shrink: 0;
+        }
+        .notif-modal-title {
+            font-family: var(--cn-font-display); font-size: 1.3rem;
+            letter-spacing: 3px; color: var(--cn-accent); flex: 1;
+        }
+        .notif-modal-close {
+            background: none; border: 1px solid var(--cn-border); color: var(--cn-text-muted);
+            border-radius: 2px; padding: 0.2rem 0.5rem; cursor: pointer;
+            font-size: 0.9rem; transition: all 0.2s; line-height: 1;
+        }
+        .notif-modal-close:hover { border-color: var(--cn-accent2); color: var(--cn-accent2); }
+        .notif-modal-body {
+            overflow-y: auto; flex: 1;
+            scrollbar-width: thin; scrollbar-color: var(--cn-border) transparent;
+        }
+        .notif-modal-body::-webkit-scrollbar { width: 4px; }
+        .notif-modal-body::-webkit-scrollbar-thumb { background: var(--cn-border); border-radius: 2px; }
+        .notif-alerta {
+            padding: 0.5rem 1rem; background: rgba(139,26,26,0.12);
+            border-bottom: 1px solid rgba(139,26,26,0.25); font-size: 0.78rem;
+            color: #e07070; font-family: var(--cn-font-mono);
+            display: flex; align-items: center; gap: 0.4rem;
+        }
+        .notif-proxima {
+            padding: 0.7rem 1rem; background: rgba(200,169,81,0.06);
+            border-bottom: 1px solid var(--cn-border);
+        }
+        .notif-proxima-label {
+            font-family: var(--cn-font-mono); font-size: 0.6rem;
+            letter-spacing: 2px; color: var(--cn-text-muted); text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+        .notif-proxima-nombre { font-weight: 700; font-size: 0.95rem; }
+        .notif-proxima-hora {
+            font-family: var(--cn-font-mono); font-size: 0.75rem; color: var(--cn-accent);
+        }
+        .notif-item {
+            padding: 0.65rem 1rem; border-bottom: 1px solid var(--cn-border);
+            text-decoration: none; display: flex; align-items: center; gap: 0.75rem;
+            color: var(--cn-text); transition: background 0.15s;
+        }
+        .notif-item:hover { background: rgba(200,169,81,0.05); color: var(--cn-text); }
+        .notif-item-dot {
+            width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 2px;
+        }
+        .notif-item-dot.pendiente  { background: var(--cn-accent); }
+        .notif-item-dot.confirmado { background: #5aad5a; }
+        .notif-item-info { flex: 1; min-width: 0; }
+        .notif-item-cliente { font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .notif-item-meta { font-family: var(--cn-font-mono); font-size: 0.68rem; color: var(--cn-text-muted); margin-top: 1px; }
+        .notif-item-hora { font-family: var(--cn-font-mono); font-size: 0.78rem; color: var(--cn-accent); flex-shrink: 0; }
+        .notif-empty {
+            padding: 2.5rem 1rem; text-align: center; color: var(--cn-text-muted);
+            font-family: var(--cn-font-mono); font-size: 0.72rem; letter-spacing: 1px;
+        }
+        .notif-modal-footer {
+            padding: 0.7rem 1rem; border-top: 1px solid var(--cn-border);
+            text-align: center; flex-shrink: 0;
+            background: var(--cn-surface2);
+        }
+        .notif-modal-footer a {
+            color: var(--cn-accent); text-decoration: none;
+            font-family: var(--cn-font-mono); font-size: 0.72rem; letter-spacing: 1px;
+        }
+        .notif-modal-footer a:hover { text-decoration: underline; }
+        /* MODAL LOGOUT */
+        .modal-cn-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.75); z-index: 9999;
+            align-items: center; justify-content: center;
+        }
+        .modal-cn-overlay.open { display: flex; }
+        .modal-cn-box {
+            background: var(--cn-surface); border: 1px solid var(--cn-accent2);
+            border-radius: 2px; padding: 2rem; max-width: 380px; width: 90%;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(139,26,26,0.3);
+        }
+        .modal-cn-icon { font-size: 2.5rem; color: var(--cn-accent2); margin-bottom: 0.75rem; }
+        .modal-cn-title { font-family: var(--cn-font-display); font-size: 1.6rem; letter-spacing: 3px; color: var(--cn-accent); margin-bottom: 0.4rem; }
+        .modal-cn-msg { font-size: 0.9rem; color: var(--cn-text-muted); margin-bottom: 1.5rem; }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 260px;
+            height: calc(100vh - 60px);
+            background: var(--cn-surface);
+            border-right: 1px solid var(--cn-border);
+            position: fixed;
+            top: 60px;
+            left: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 1.5rem 0 2rem;
+            z-index: 1040;
+            transition: transform 0.3s ease;
+            scrollbar-width: thin;
+            scrollbar-color: var(--cn-border) transparent;
+        }
+        .sidebar::-webkit-scrollbar { width: 4px; }
+        .sidebar::-webkit-scrollbar-track { background: transparent; }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--cn-border); border-radius: 2px; }
+        .sidebar::-webkit-scrollbar-thumb:hover { background: var(--cn-accent); }
+
+        /* SIDEBAR COLLAPSED — desktop: empuja el contenido */
+        body.sidebar-collapsed .sidebar {
+            transform: translateX(-260px);
+        }
+        body.sidebar-collapsed .main-content {
+            margin-left: 0;
+        }
+        body.sidebar-collapsed #mainFooter {
+            margin-left: 0 !important;
+        }
+
+        /* SIDEBAR BACKDROP — solo móvil */
+        .sidebar-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.65);
+            z-index: 1039;
+        }
+        .sidebar-backdrop.show { display: block; }
+
+        .sidebar-section {
+            padding: 0.6rem 1.3rem 0.25rem;
+            font-family: var(--cn-font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            color: var(--cn-text-muted);
+            text-transform: uppercase;
+            margin-top: 0.6rem;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0.75rem 1.5rem;
+            color: var(--cn-text-muted);
+            text-decoration: none;
+            font-family: var(--cn-font-body);
+            font-weight: 600;
+            font-size: 1.05rem;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+            position: relative;
+        }
+        .sidebar-link:hover {
+            color: var(--cn-accent);
+            background: rgba(200,169,81,0.06);
+            border-left-color: var(--cn-accent);
+        }
+        .sidebar-link.active {
+            color: var(--cn-accent);
+            background: rgba(200,169,81,0.1);
+            border-left-color: var(--cn-accent);
+        }
+        .sidebar-link i { font-size: 1.15rem; width: 22px; }
+
+        .sidebar-badge {
+            margin-left: auto;
+            background: var(--cn-accent2);
+            color: white;
+            font-size: 0.65rem;
+            padding: 1px 6px;
+            border-radius: 10px;
+            font-family: var(--cn-font-mono);
+        }
+
+        /* MAIN CONTENT */
+        .main-content {
+            margin-left: 260px;
+            padding: 2rem;
+            min-height: calc(100vh - 60px);
+            transition: margin-left 0.3s ease;
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* PAGE HEADER responsive */
+        .page-header {
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        /* RESPONSIVE — tablet */
+        @media (max-width: 991px) {
+            .main-content { padding: 1.5rem; }
+        }
+
+        /* RESPONSIVE — mobile */
+        @media (max-width: 767px) {
+            /* En móvil el sidebar siempre está oculto por defecto (overlay) */
+            .sidebar { transform: translateX(-260px) !important; top: 56px; }
+            .sidebar.open { transform: translateX(0) !important; }
+
+            /* El contenido ocupa todo el ancho siempre en móvil */
+            .main-content { margin-left: 0 !important; padding: 1rem; }
+            #mainFooter { margin-left: 0 !important; }
+
+            /* Navbar compacto */
+            .navbar-cn { padding: 0.4rem 1rem; }
+            .navbar-brand-cn { font-size: 1.4rem; letter-spacing: 2px; }
+            .navbar-brand-cn small { font-size: 0.42rem; letter-spacing: 3px; }
+            .navbar-user-text { display: none !important; }
+
+            /* Títulos */
+            .page-title { font-size: 1.7rem; letter-spacing: 2px; }
+
+            /* Stat cards */
+            .stat-value { font-size: 2rem; }
+
+            /* Botones full-width en page-header */
+            .page-header > a,
+            .page-header > button { width: 100%; text-align: center; }
+
+            /* Tablas: ocultar columnas secundarias */
+            .table-cn .col-hide-sm { display: none; }
+        }
+
+        @media (max-width: 400px) {
+            .page-title { font-size: 1.4rem; }
+            .stat-value { font-size: 1.7rem; }
+            .main-content { padding: 0.75rem; }
+        }
+
+        /* PAGE HEADER */
+        .page-header {
+            border-bottom: 1px solid var(--cn-border);
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .page-title {
+            font-family: var(--cn-font-display);
+            font-size: 2.2rem;
+            letter-spacing: 3px;
+            color: var(--cn-accent);
+            line-height: 1;
+            text-shadow: 0 0 30px rgba(200,169,81,0.2);
+        }
+        .page-subtitle {
+            font-family: var(--cn-font-mono);
+            font-size: 0.7rem;
+            color: var(--cn-text-muted);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* CARDS */
+        .card-cn {
+            background: var(--cn-surface);
+            border: 1px solid var(--cn-border);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .card-cn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--cn-accent), var(--cn-accent2));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .card-cn:hover::before { opacity: 1; }
+        .card-cn:hover { border-color: rgba(200,169,81,0.3); box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+
+        .card-cn .card-header {
+            background: var(--cn-surface2);
+            border-bottom: 1px solid var(--cn-border);
+            font-family: var(--cn-font-display);
+            letter-spacing: 2px;
+            font-size: 1.1rem;
+            color: var(--cn-accent);
+            padding: 0.8rem 1.2rem;
+        }
+        .card-cn .card-body { padding: 1.2rem; }
+
+        /* STAT CARDS */
+        .stat-card {
+            background: var(--cn-surface);
+            border: 1px solid var(--cn-border);
+            border-radius: 4px;
+            padding: 1.2rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-2px); }
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 2px;
+        }
+        .stat-card.gold::after { background: var(--cn-accent); }
+        .stat-card.red::after { background: var(--cn-accent2); }
+        .stat-card.purple::after { background: var(--cn-accent3); }
+        .stat-card.green::after { background: #2d6a2d; }
+
+        .stat-value {
+            font-family: var(--cn-font-display);
+            font-size: 2.5rem;
+            line-height: 1;
+            color: var(--cn-accent);
+        }
+        .stat-label {
+            font-family: var(--cn-font-mono);
+            font-size: 0.65rem;
+            letter-spacing: 2px;
+            color: var(--cn-text-muted);
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+        .stat-icon {
+            position: absolute;
+            right: 1rem; top: 1rem;
+            font-size: 2rem;
+            opacity: 0.08;
+        }
+
+        /* BUTTONS */
+        .btn-cn-primary {
+            background: var(--cn-accent);
+            border: none;
+            color: #000;
+            font-family: var(--cn-font-body);
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 0.5rem 1.5rem;
+            font-size: 0.85rem;
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+        .btn-cn-primary:hover { background: #e0be65; color: #000; transform: translateY(-1px); box-shadow: 0 4px 15px rgba(200,169,81,0.3); }
+
+        .btn-cn-danger {
+            background: var(--cn-accent2);
+            border: none;
+            color: white;
+            font-family: var(--cn-font-body);
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 0.5rem 1.5rem;
+            font-size: 0.85rem;
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+        .btn-cn-danger:hover { background: #a02222; color: white; }
+
+        .btn-cn-outline {
+            background: transparent;
+            border: 1px solid var(--cn-border);
+            color: var(--cn-text-muted);
+            font-family: var(--cn-font-body);
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 0.4rem 1.2rem;
+            font-size: 0.8rem;
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+        .btn-cn-outline:hover { border-color: var(--cn-accent); color: var(--cn-accent); }
+
+        /* TABLES */
+        .table-cn {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+        }
+        .table-cn thead tr {
+            background: var(--cn-surface2);
+        }
+        .table-cn thead th {
+            font-family: var(--cn-font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--cn-text-muted);
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid var(--cn-accent);
+            font-weight: 400;
+        }
+        .table-cn tbody td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--cn-border);
+            font-size: 0.9rem;
+            color: var(--cn-text);
+            vertical-align: middle;
+        }
+        .table-cn tbody tr:hover td { background: rgba(200,169,81,0.03); }
+        .table-cn tbody tr:last-child td { border-bottom: none; }
+
+        /* BADGES / ESTADOS */
+        .badge-pendiente { background: rgba(200,169,81,0.15); color: var(--cn-accent); border: 1px solid rgba(200,169,81,0.3); }
+        .badge-confirmado { background: rgba(45,106,45,0.15); color: #5aad5a; border: 1px solid rgba(45,106,45,0.3); }
+        .badge-atendido { background: rgba(74,74,106,0.2); color: #9090c0; border: 1px solid rgba(74,74,106,0.4); }
+        .badge-cancelado { background: rgba(139,26,26,0.15); color: #c05050; border: 1px solid rgba(139,26,26,0.3); }
+        .badge-no_show { background: rgba(80,80,80,0.2); color: #888; border: 1px solid #333; }
+
+        .estado-badge {
+            font-family: var(--cn-font-mono);
+            font-size: 0.68rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 3px 10px;
+            border-radius: 2px;
+            display: inline-block;
+        }
+
+        /* FORMS */
+        .form-control, .form-select {
+            background: var(--cn-surface2) !important;
+            border: 1px solid var(--cn-border) !important;
+            color: var(--cn-text) !important;
+            font-family: var(--cn-font-body) !important;
+            border-radius: 2px !important;
+            font-size: 0.95rem;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--cn-accent) !important;
+            box-shadow: 0 0 0 2px rgba(200,169,81,0.15) !important;
+        }
+        .form-label {
+            font-family: var(--cn-font-mono);
+            font-size: 0.72rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--cn-text-muted);
+            margin-bottom: 0.3rem;
+        }
+
+        /* ALERTS */
+        .alert-cn {
+            border-radius: 2px;
+            border-left: 3px solid var(--cn-accent);
+            background: rgba(200,169,81,0.05);
+            color: var(--cn-text);
+            font-family: var(--cn-font-body);
+            font-size: 0.9rem;
+            padding: 0.75rem 1rem;
+        }
+        .alert-cn.error   { border-left-color: var(--cn-accent2); background: rgba(139,26,26,0.08); color: #e07070; }
+        .alert-cn.success { border-left-color: #2d6a2d; background: rgba(45,106,45,0.08); color: #6abf6a; }
+        .alert-cn.warning { border-left-color: #a07820; background: rgba(160,120,32,0.08); color: #c8a951; }
+        .alert-close-btn {
+            margin-left: auto; background: none; border: none; cursor: pointer;
+            color: inherit; opacity: 0.5; font-size: 1rem; padding: 0 0.2rem;
+            flex-shrink: 0; transition: opacity 0.2s;
+        }
+        .alert-close-btn:hover { opacity: 1; }
+        /* Indicador mensajes ocultos */
+        #msgIndicator {
+            position: fixed; bottom: 1.2rem; right: 1.2rem; z-index: 3000;
+            display: none; flex-direction: column; align-items: flex-end; gap: 0.4rem;
+        }
+        #msgIndicator.visible { display: flex; }
+        .msg-pill {
+            background: var(--cn-surface); border: 1px solid var(--cn-accent);
+            border-radius: 20px; padding: 0.35rem 0.9rem;
+            font-family: var(--cn-font-mono); font-size: 0.72rem;
+            color: var(--cn-accent); cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+            display: flex; align-items: center; gap: 0.4rem;
+            transition: background 0.2s;
+        }
+        .msg-pill:hover { background: rgba(200,169,81,0.1); }
+        #msgHiddenPanel {
+            display: none; background: var(--cn-surface);
+            border: 1px solid var(--cn-border); border-radius: 2px;
+            width: 300px; max-height: 320px; overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+        }
+        #msgHiddenPanel.open { display: block; }
+        .msg-panel-header {
+            padding: 0.5rem 0.8rem; border-bottom: 1px solid var(--cn-border);
+            font-family: var(--cn-font-body); font-weight: 700; font-size: 0.75rem;
+            letter-spacing: 1px; color: var(--cn-accent); text-transform: uppercase;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .msg-panel-item {
+            padding: 0.45rem 0.75rem; border-bottom: 1px solid var(--cn-border);
+            font-size: 0.82rem; display: flex; align-items: flex-start; gap: 0.5rem;
+        }
+        .msg-panel-clear {
+            background: none; border: none; color: var(--cn-text-muted);
+            font-size: 0.7rem; cursor: pointer; font-family: var(--cn-font-mono);
+            padding: 0; transition: color 0.2s;
+        }
+        .msg-panel-clear:hover { color: var(--cn-accent2); }
+
+        /* TOASTS ALERTAS CITAS */
+        #cn-toasts {
+            position: fixed;
+            bottom: 5.5rem;
+            right: 1.2rem;
+            z-index: 4000;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 0.6rem;
+            width: 300px;
+            pointer-events: none;
+        }
+        .cn-toast {
+            background: var(--cn-surface);
+            border: 1px solid var(--cn-accent);
+            border-left: 3px solid var(--cn-accent);
+            border-radius: 4px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.8), 0 0 20px rgba(200,169,81,0.15);
+            overflow: hidden;
+            pointer-events: all;
+            animation: toastIn 0.35s cubic-bezier(.22,1,.36,1) both;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        .cn-toast.ahora { border-left-color: var(--cn-accent2); border-color: var(--cn-accent2); }
+        .cn-toast.ahora .cn-toast-hdr { background: rgba(139,26,26,0.15); color: #e07070; }
+        @keyframes toastIn {
+            from { opacity:0; transform: translateX(80px) scale(0.95); }
+            to   { opacity:1; transform: translateX(0) scale(1); }
+        }
+        .cn-toast-hdr {
+            display: flex; align-items: center; gap: 0.5rem;
+            padding: 0.45rem 0.75rem;
+            background: rgba(200,169,81,0.08);
+            border-bottom: 1px solid var(--cn-border);
+            font-family: var(--cn-font-mono); font-size: 0.7rem;
+            font-weight: 700; letter-spacing: 1px;
+            color: var(--cn-accent); text-transform: uppercase;
+        }
+        .cn-toast-hdr .cn-toast-close {
+            margin-left: auto; background: none; border: none;
+            color: var(--cn-text-muted); cursor: pointer; font-size: 1rem;
+            padding: 0; line-height: 1; transition: color 0.15s;
+        }
+        .cn-toast-hdr .cn-toast-close:hover { color: var(--cn-text); }
+        .cn-toast-body { padding: 0.6rem 0.75rem; }
+        .cn-toast-cliente {
+            font-family: var(--cn-font-body); font-weight: 700;
+            font-size: 1rem; color: var(--cn-text);
+        }
+        .cn-toast-meta {
+            font-family: var(--cn-font-mono); font-size: 0.7rem;
+            color: var(--cn-text-muted); margin-top: 2px;
+        }
+        .cn-toast-footer {
+            display: flex; border-top: 1px solid var(--cn-border);
+        }
+        .cn-toast-footer a, .cn-toast-footer button {
+            flex: 1; text-align: center; padding: 0.35rem 0.5rem;
+            font-family: var(--cn-font-mono); font-size: 0.68rem;
+            color: var(--cn-accent); text-decoration: none;
+            background: none; border: none; cursor: pointer;
+            transition: background 0.15s; letter-spacing: 1px;
+        }
+        .cn-toast-footer a:hover, .cn-toast-footer button:hover {
+            background: rgba(200,169,81,0.1); color: var(--cn-accent);
+        }
+        .cn-toast-footer a + button { border-left: 1px solid var(--cn-border); color: var(--cn-text-muted); }
+        .cn-toast-progress {
+            height: 3px; background: var(--cn-accent);
+            animation: toastProgress linear forwards;
+        }
+        .cn-toast.ahora .cn-toast-progress { background: var(--cn-accent2); }
+        @keyframes toastProgress {
+            from { width: 100%; } to { width: 0%; }
+        }
+        /* Campana pulsante cuando hay alertas activas */
+        .notif-btn.alerta-activa {
+            border-color: var(--cn-accent) !important;
+            color: var(--cn-accent) !important;
+            animation: bellPulse 1.5s ease-in-out infinite;
+        }
+        @keyframes bellPulse {
+            0%,100% { box-shadow: 0 0 0 0 rgba(200,169,81,0.4); }
+            50%      { box-shadow: 0 0 0 6px rgba(200,169,81,0); }
+        }
+
+        /* SKULL SEPARATOR */
+        .skull-sep {
+            text-align: center;
+            position: relative;
+            margin: 1.5rem 0;
+        }
+        .skull-sep::before, .skull-sep::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 42%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--cn-border));
+        }
+        .skull-sep::before { left: 0; }
+        .skull-sep::after { right: 0; background: linear-gradient(90deg, var(--cn-border), transparent); }
+        .skull-sep span { font-size: 1rem; color: var(--cn-text-muted); position: relative; z-index: 1; }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--cn-bg); }
+        ::-webkit-scrollbar-thumb { background: var(--cn-border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--cn-accent); }
+
+        /* ANIMATIONS */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes glowPulse {
+            0%, 100% { box-shadow: 0 0 5px rgba(200,169,81,0.2); }
+            50% { box-shadow: 0 0 20px rgba(200,169,81,0.4); }
+        }
+
+        .animate-fade { animation: fadeInUp 0.4s ease both; }
+        .animate-slide { animation: slideInLeft 0.3s ease both; }
+        .animate-delay-1 { animation-delay: 0.1s; }
+        .animate-delay-2 { animation-delay: 0.2s; }
+        .animate-delay-3 { animation-delay: 0.3s; }
+        .animate-delay-4 { animation-delay: 0.4s; }
+
+        /* CITA STATUS INDICATOR */
+        .cita-row { border-left: 3px solid var(--cn-border); padding-left: 8px; }
+        .cita-row.pendiente { border-left-color: var(--cn-accent); }
+        .cita-row.confirmado { border-left-color: #2d6a2d; }
+        .cita-row.atendido { border-left-color: var(--cn-accent3); }
+        .cita-row.cancelado { border-left-color: var(--cn-accent2); }
+
+        /* STOCK ALERT */
+        .stock-alert { animation: glowPulse 2s infinite; border-color: var(--cn-accent2) !important; }
+
+        /* FOOTER */
+        .footer-cn {
+            background: var(--cn-surface);
+            border-top: 1px solid var(--cn-border);
+            padding: 1rem 2rem;
+            text-align: center;
+            font-family: var(--cn-font-mono);
+            font-size: 0.65rem;
+            color: var(--cn-text-muted);
+            letter-spacing: 2px;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- NAVBAR TOP -->
+<nav class="navbar-cn d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center gap-3">
+        <button class="btn btn-sm text-warning border-0" id="sidebarToggle" title="Menú" style="padding:0.25rem 0.4rem; transition: color 0.2s;">
+            <i class="bi bi-list fs-4" id="sidebarToggleIcon"></i>
+        </button>
+        <a href="{% url 'citas:dashboard' %}" class="navbar-brand-cn">
+            ☠ CUERVO <span>NEGRO</span>
+            <small>BARBER · TATTOO</small>
+        </a>
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+        {% if user.is_authenticated %}
+
+        <!-- Botón campana -->
+        <button class="notif-btn" id="notifBtn" title="Notificaciones"
+                onclick="document.getElementById('notifModal').classList.add('open')">
+            <i class="bi bi-bell-fill" style="font-size:1rem"></i>
+            {% if nav_notif_count > 0 %}
+            <span class="notif-badge">{{ nav_notif_count }}</span>
+            {% endif %}
+        </button>
+
+        <!-- Modal notificaciones -->
+        <div class="notif-modal-overlay" id="notifModal"
+             onclick="if(event.target===this)this.classList.remove('open')">
+            <div class="notif-modal-box">
+
+                <!-- Header -->
+                <div class="notif-modal-header">
+                    <i class="bi bi-bell-fill" style="color:var(--cn-accent);font-size:1.1rem"></i>
+                    <span class="notif-modal-title">{% if user.es_barbero %}MIS CITAS{% else %}CITAS HOY{% endif %}</span>
+                    {% if nav_notif_count > 0 %}
+                    <span style="background:var(--cn-accent2);color:#fff;border-radius:10px;padding:2px 9px;font-family:var(--cn-font-mono);font-size:0.68rem;font-weight:700">{{ nav_notif_count }}</span>
+                    {% endif %}
+                    <button class="notif-modal-close"
+                            onclick="document.getElementById('notifModal').classList.remove('open')">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+
+                <!-- Body scrollable -->
+                <div class="notif-modal-body">
+
+                    {% if user.es_barbero %}
+                    <!-- Barbero: saludo personalizado -->
+                    <div style="padding:0.5rem 1rem;background:rgba(200,169,81,0.04);border-bottom:1px solid var(--cn-border);font-family:var(--cn-font-mono);font-size:0.68rem;color:var(--cn-text-muted)">
+                        <i class="bi bi-scissors me-1"></i>{{ user.get_full_name|default:user.username|upper }}
+                    </div>
+                    {% endif %}
+
+                    {% if nav_sin_atender > 0 %}
+                    <div class="notif-alerta">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        {{ nav_sin_atender }} cita{{ nav_sin_atender|pluralize:"s" }} pasada{{ nav_sin_atender|pluralize:"s" }} sin atender
+                    </div>
+                    {% endif %}
+
+                    {% if nav_proxima %}
+                    <div class="notif-proxima">
+                        <div class="notif-proxima-label"><i class="bi bi-clock me-1"></i>PRÓXIMA CITA</div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="notif-proxima-nombre">{{ nav_proxima.cliente.nombre }}</div>
+                                <div class="notif-proxima-hora">
+                                    {{ nav_proxima.fecha_hora|date:"H:i" }}
+                                    {% if nav_proxima.servicio %} · {{ nav_proxima.servicio.nombre }}{% endif %}
+                                    {% if not user.es_barbero %} · {{ nav_proxima.barbero.usuario.get_full_name|default:nav_proxima.barbero.usuario.username }}{% endif %}
+                                </div>
+                            </div>
+                            <a href="{% url 'citas:detalle' nav_proxima.pk %}"
+                               style="font-family:var(--cn-font-mono);font-size:0.68rem;color:var(--cn-accent);text-decoration:none;border:1px solid rgba(200,169,81,0.3);padding:0.2rem 0.6rem;border-radius:2px;white-space:nowrap">
+                                Ver →
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if nav_citas_hoy %}
+                        {% for cita in nav_citas_hoy %}
+                        <a href="{% url 'citas:detalle' cita.pk %}" class="notif-item">
+                            <div class="notif-item-dot {{ cita.estado }}"></div>
+                            <div class="notif-item-info">
+                                <div class="notif-item-cliente">{{ cita.cliente.nombre }}</div>
+                                <div class="notif-item-meta">
+                                    {{ cita.servicio.nombre|default:"—" }}
+                                    {% if not user.es_barbero %} · {{ cita.barbero.usuario.get_full_name|default:cita.barbero.usuario.username }}{% endif %}
+                                    · <span style="color:{% if cita.estado == 'confirmado' %}#5aad5a{% else %}var(--cn-accent){% endif %}">{{ cita.get_estado_display }}</span>
+                                </div>
+                            </div>
+                            <span class="notif-item-hora">{{ cita.fecha_hora|date:"H:i" }}</span>
+                        </a>
+                        {% endfor %}
+                    {% else %}
+                    <div class="notif-empty">
+                        <div style="font-size:2.5rem;opacity:0.2;margin-bottom:0.5rem">☠</div>
+                        {% if user.es_barbero %}SIN CITAS ASIGNADAS{% else %}SIN CITAS HOY{% endif %}
+                    </div>
+                    {% endif %}
+
+                </div>
+
+                <!-- Footer -->
+                <div class="notif-modal-footer">
+                    {% if user.es_barbero %}
+                    <a href="{% url 'citas:lista' %}">
+                        <i class="bi bi-list-ul me-1"></i>VER MIS CITAS →
+                    </a>
+                    {% else %}
+                    <a href="{% url 'citas:agenda' %}">
+                        <i class="bi bi-calendar3 me-1"></i>VER AGENDA COMPLETA →
+                    </a>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Usuario -->
+        <a href="{% url 'accounts:perfil' %}" class="navbar-user-text text-decoration-none"
+           style="font-family:var(--cn-font-mono);font-size:0.7rem;color:var(--cn-text-muted);display:flex;align-items:center;gap:6px">
+            {% if user.foto %}
+            <img src="{{ user.foto.url }}" alt="foto"
+                 style="width:26px;height:26px;border-radius:50%;object-fit:cover;border:1px solid var(--cn-accent)">
+            {% else %}
+            <i class="bi bi-person-circle" style="color:var(--cn-accent);font-size:1.1rem"></i>
+            {% endif %}
+            {{ user.get_full_name|default:user.username }}
+            <span style="opacity:0.5"> · {{ user.get_rol_display }}</span>
+        </a>
+
+        <!-- Botón salir -->
+        <button onclick="document.getElementById('logoutModal').classList.add('open')"
+                class="btn-cn-outline" style="font-size:0.7rem;padding:0.3rem 0.8rem;white-space:nowrap;cursor:pointer">
+            <i class="bi bi-box-arrow-right"></i> <span class="d-none d-sm-inline">SALIR</span>
+        </button>
+
+        <!-- Modal confirmación logout -->
+        <div class="modal-cn-overlay" id="logoutModal" onclick="if(event.target===this)this.classList.remove('open')">
+            <div class="modal-cn-box">
+                <div class="modal-cn-icon"><i class="bi bi-door-open-fill"></i></div>
+                <div class="modal-cn-title">¿SALIR?</div>
+                <div class="modal-cn-msg">¿Estás seguro de que deseas cerrar sesión del sistema?</div>
+                <div class="d-flex gap-2 justify-content-center">
+                    <button onclick="document.getElementById('logoutModal').classList.remove('open')"
+                            class="btn-cn-outline" style="padding:0.5rem 1.5rem">
+                        <i class="bi bi-x me-1"></i>CANCELAR
+                    </button>
+                    <form method="post" action="{% url 'logout' %}" style="margin:0">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-cn-primary" style="padding:0.5rem 1.5rem">
+                            <i class="bi bi-box-arrow-right me-1"></i>SALIR
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {% endif %}
+    </div>
+</nav>
+
+<div class="d-flex">
+    <!-- SIDEBAR BACKDROP (móvil) -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <!-- SIDEBAR -->
+    {% if user.is_authenticated %}
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-section">Principal</div>
+        <a href="{% url 'citas:dashboard' %}" class="sidebar-link {% if request.resolver_match.namespace == 'citas' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <i class="bi bi-grid-3x3-gap-fill"></i> Dashboard
+        </a>
+        <a href="{% url 'citas:agenda' %}" class="sidebar-link">
+            <i class="bi bi-calendar3"></i> Agenda
+        </a>
+
+        <div class="skull-sep"><span>☠</span></div>
+
+        <div class="sidebar-section">Operaciones</div>
+        <a href="{% url 'citas:lista' %}" class="sidebar-link {% if request.resolver_match.namespace == 'citas' and 'lista' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-scissors"></i> Citas
+        </a>
+        <a href="{% url 'ventas:nueva' %}" class="sidebar-link">
+            <i class="bi bi-cash-coin"></i> Nueva Venta
+        </a>
+        <a href="{% url 'ventas:corte_caja' %}" class="sidebar-link">
+            <i class="bi bi-safe2"></i> Corte de Caja
+        </a>
+
+        <div class="skull-sep"><span>☠</span></div>
+
+        <div class="sidebar-section">Gestión</div>
+        <a href="{% url 'clientes:lista' %}" class="sidebar-link {% if request.resolver_match.namespace == 'clientes' %}active{% endif %}">
+            <i class="bi bi-people-fill"></i> Clientes
+        </a>
+        {% if not user.es_barbero %}
+        <a href="{% url 'barberos:lista' %}" class="sidebar-link {% if request.resolver_match.namespace == 'barberos' %}active{% endif %}">
+            <i class="bi bi-person-badge"></i> Barberos
+        </a>
+        <a href="{% url 'servicios:lista' %}" class="sidebar-link {% if request.resolver_match.namespace == 'servicios' %}active{% endif %}">
+            <i class="bi bi-star-fill"></i> Servicios
+        </a>
+        <a href="{% url 'inventario:lista' %}" class="sidebar-link {% if request.resolver_match.namespace == 'inventario' %}active{% endif %}">
+            <i class="bi bi-boxes"></i> Inventario
+        </a>
+        {% endif %}
+
+        {% if not user.es_barbero %}
+        <div class="skull-sep"><span>☠</span></div>
+        <div class="sidebar-section">Reportes</div>
+        <a href="{% url 'reportes:general' %}" class="sidebar-link {% if request.resolver_match.namespace == 'reportes' %}active{% endif %}">
+            <i class="bi bi-bar-chart-fill"></i> Reportes
+        </a>
+        {% endif %}
+
+        <div class="skull-sep"><span>☠</span></div>
+        <div class="sidebar-section">Cuenta</div>
+        <a href="{% url 'accounts:perfil' %}" class="sidebar-link {% if request.resolver_match.namespace == 'accounts' and request.resolver_match.url_name == 'perfil' %}active{% endif %}">
+            <i class="bi bi-person-gear"></i> Mi Perfil
+        </a>
+    </nav>
+    {% endif %}
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <!-- Mensajes -->
+        {% if messages %}
+        <div class="mb-3" id="alertsContainer">
+            {% for msg in messages %}
+            {% if 'error' in msg.tags %}{% with tipo="error" icono="bi-exclamation-triangle-fill" %}{% endwith %}{% endif %}
+            <div class="alert-cn {% if 'error' in msg.tags %}error{% elif 'success' in msg.tags %}success{% elif 'warning' in msg.tags %}warning{% endif %} d-flex align-items-center gap-2 mb-2 animate-fade"
+                 data-msg-text="{{ msg|escapejs }}"
+                 data-msg-type="{% if 'error' in msg.tags %}error{% elif 'success' in msg.tags %}success{% elif 'warning' in msg.tags %}warning{% else %}info{% endif %}">
+                <i class="bi {% if 'error' in msg.tags %}bi-exclamation-triangle-fill{% elif 'success' in msg.tags %}bi-check-circle-fill{% elif 'warning' in msg.tags %}bi-exclamation-circle-fill{% else %}bi-info-circle-fill{% endif %}" style="flex-shrink:0"></i>
+                <span style="flex:1">{{ msg }}</span>
+                <button class="alert-close-btn" title="Ocultar (puedes verlo después)" onclick="ocultarMensaje(this)">
+                    <i class="bi bi-eye-slash"></i>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Indicador de mensajes ocultos -->
+        <div id="msgIndicator">
+            <div id="msgHiddenPanel">
+                <div class="msg-panel-header">
+                    <span><i class="bi bi-archive me-1"></i>MENSAJES OCULTOS</span>
+                    <button class="msg-panel-clear" onclick="limpiarOcultos()">Limpiar todo</button>
+                </div>
+                <div id="msgHiddenList"></div>
+            </div>
+            <div class="msg-pill" onclick="togglePanelOcultos()">
+                <i class="bi bi-eye-slash-fill"></i>
+                <span id="msgPillCount">0</span> oculto<span id="msgPillPlural">s</span>
+                <i class="bi bi-chevron-up" id="msgPillChevron" style="font-size:0.65rem"></i>
+            </div>
+        </div>
+
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer-cn" id="mainFooter" style="margin-left: 260px;">
+    ☠ CUERVO NEGRO BARBER · TATTOO &nbsp;|&nbsp; Sistema de Gestión v1.0 &nbsp;|&nbsp; 2024
+</footer>
+
+<!-- Contenedor toasts de citas -->
+<div id="cn-toasts"></div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const toggleIcon    = document.getElementById('sidebarToggleIcon');
+    const sidebar       = document.getElementById('sidebar');
+    const backdrop      = document.getElementById('sidebarBackdrop');
+    const footer        = document.getElementById('mainFooter');
+    const MOBILE_BP     = 768;
+
+    const isMobile = () => window.innerWidth < MOBILE_BP;
+
+    /* ── íconos ── */
+    function setIcon(collapsed) {
+        if (!toggleIcon) return;
+        toggleIcon.className = collapsed ? 'bi bi-layout-sidebar fs-4' : 'bi bi-x-lg fs-5';
+    }
+
+    /* ── desktop: colapsa/expande empujando el contenido ── */
+    function desktopCollapse() {
+        document.body.classList.add('sidebar-collapsed');
+        localStorage.setItem('sidebarCollapsed', '1');
+        setIcon(true);
+        if (footer) footer.style.marginLeft = '0';
+    }
+    function desktopExpand() {
+        document.body.classList.remove('sidebar-collapsed');
+        localStorage.setItem('sidebarCollapsed', '0');
+        setIcon(false);
+        if (footer) footer.style.marginLeft = '260px';
+    }
+
+    /* ── móvil: overlay con backdrop ── */
+    function mobileOpen() {
+        sidebar.classList.add('open');
+        backdrop.classList.add('show');
+        document.body.style.overflow = 'hidden';
+        setIcon(false);
+    }
+    function mobileClose() {
+        sidebar.classList.remove('open');
+        backdrop.classList.remove('show');
+        document.body.style.overflow = '';
+        setIcon(true);
+    }
+
+    /* ── botón toggle ── */
+    if (sidebarToggle && sidebar) {
+        sidebarToggle.addEventListener('click', () => {
+            if (isMobile()) {
+                sidebar.classList.contains('open') ? mobileClose() : mobileOpen();
+            } else {
+                document.body.classList.contains('sidebar-collapsed')
+                    ? desktopExpand()
+                    : desktopCollapse();
+            }
+        });
+    }
+
+    /* ── cerrar móvil al tocar backdrop ── */
+    if (backdrop) backdrop.addEventListener('click', mobileClose);
+
+    /* ── cerrar móvil al navegar ── */
+    if (sidebar) {
+        sidebar.querySelectorAll('.sidebar-link').forEach(link => {
+            link.addEventListener('click', () => { if (isMobile()) mobileClose(); });
+        });
+    }
+
+    /* ── restaurar estado al cargar ── */
+    (function init() {
+        if (isMobile()) {
+            // Móvil: siempre cerrado al cargar, ícono = hamburguesa
+            document.body.classList.remove('sidebar-collapsed');
+            if (footer) footer.style.marginLeft = '0';
+            setIcon(true);
+        } else {
+            // Desktop: restaurar desde localStorage
+            const collapsed = localStorage.getItem('sidebarCollapsed') === '1';
+            if (collapsed) {
+                document.body.classList.add('sidebar-collapsed');
+                if (footer) footer.style.marginLeft = '0';
+                setIcon(true);
+            } else {
+                document.body.classList.remove('sidebar-collapsed');
+                if (footer) footer.style.marginLeft = '260px';
+                setIcon(false);
+            }
+        }
+    })();
+
+    /* ── al cambiar tamaño de ventana ── */
+    window.addEventListener('resize', () => {
+        if (isMobile()) {
+            // Pasar a móvil: cerrar mobile sidebar y limpiar estado desktop
+            mobileClose();
+            document.body.classList.remove('sidebar-collapsed');
+            if (footer) footer.style.marginLeft = '0';
+            setIcon(true);
+        } else {
+            // Pasar a desktop: restaurar estado guardado
+            mobileClose();
+            const collapsed = localStorage.getItem('sidebarCollapsed') === '1';
+            collapsed ? desktopCollapse() : desktopExpand();
+        }
+    });
+
+    /* ── animaciones al cargar ── */
+    document.querySelectorAll('.animate-fade, .stat-card, .card-cn').forEach((el, i) => {
+        el.style.animationDelay = (i * 0.05) + 's';
+        el.classList.add('animate-fade');
+    });
+
+    /* ── Mensajes ocultables ── */
+    const MSG_KEY = 'cn_hidden_msgs';
+
+    function getMsgsOcultos() {
+        try { return JSON.parse(sessionStorage.getItem(MSG_KEY) || '[]'); } catch { return []; }
+    }
+    function saveMsgsOcultos(arr) {
+        sessionStorage.setItem(MSG_KEY, JSON.stringify(arr));
+    }
+
+    function ocultarMensaje(btn) {
+        const div = btn.closest('.alert-cn');
+        const texto = div.dataset.msgText;
+        const tipo  = div.dataset.msgType;
+        // Guardar en sessionStorage
+        const ocultos = getMsgsOcultos();
+        if (!ocultos.find(m => m.texto === texto)) {
+            ocultos.push({ texto, tipo, ts: new Date().toLocaleTimeString('es-BO', {hour:'2-digit', minute:'2-digit'}) });
+            saveMsgsOcultos(ocultos);
+        }
+        div.style.transition = 'opacity 0.25s, transform 0.25s';
+        div.style.opacity = '0';
+        div.style.transform = 'translateX(20px)';
+        setTimeout(() => div.remove(), 260);
+        setTimeout(actualizarIndicador, 300);
+    }
+
+    function actualizarIndicador() {
+        const ocultos   = getMsgsOcultos();
+        const indicator = document.getElementById('msgIndicator');
+        const pillCount = document.getElementById('msgPillCount');
+        const plural    = document.getElementById('msgPillPlural');
+        if (!indicator) return;
+        if (ocultos.length > 0) {
+            indicator.classList.add('visible');
+            pillCount.textContent = ocultos.length;
+            plural.textContent    = ocultos.length === 1 ? '' : 's';
+            renderPanelOcultos(ocultos);
+        } else {
+            indicator.classList.remove('visible');
+            document.getElementById('msgHiddenPanel').classList.remove('open');
+        }
+    }
+
+    function renderPanelOcultos(ocultos) {
+        const iconos = { error: 'bi-exclamation-triangle-fill', success: 'bi-check-circle-fill',
+                         warning: 'bi-exclamation-circle-fill', info: 'bi-info-circle-fill' };
+        const colores = { error: '#e07070', success: '#6abf6a', warning: '#c8a951', info: 'var(--cn-text-muted)' };
+        document.getElementById('msgHiddenList').innerHTML = ocultos.map((m, i) => `
+            <div class="msg-panel-item">
+                <i class="bi ${iconos[m.tipo] || iconos.info}" style="color:${colores[m.tipo]};flex-shrink:0;margin-top:2px"></i>
+                <div style="flex:1">
+                    <div style="font-size:0.8rem">${m.texto}</div>
+                    <div style="font-size:0.68rem;color:var(--cn-text-muted);font-family:var(--cn-font-mono)">${m.ts}</div>
+                </div>
+                <button onclick="restaurarMensaje(${i})" title="Restaurar"
+                        style="background:none;border:none;color:var(--cn-text-muted);cursor:pointer;font-size:0.85rem;flex-shrink:0">
+                    <i class="bi bi-eye"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+
+    function restaurarMensaje(idx) {
+        const ocultos = getMsgsOcultos();
+        const m = ocultos[idx];
+        if (!m) return;
+        // Re-insertar alerta en el DOM
+        const container = document.getElementById('alertsContainer') || (() => {
+            const c = document.createElement('div');
+            c.id = 'alertsContainer';
+            c.className = 'mb-3';
+            document.querySelector('.main-content').prepend(c);
+            return c;
+        })();
+        const tipos = { error:'error', success:'success', warning:'warning', info:'' };
+        const iconos = { error:'bi-exclamation-triangle-fill', success:'bi-check-circle-fill',
+                         warning:'bi-exclamation-circle-fill', info:'bi-info-circle-fill' };
+        const div = document.createElement('div');
+        div.className = `alert-cn ${tipos[m.tipo] || ''} d-flex align-items-center gap-2 mb-2 animate-fade`;
+        div.dataset.msgText = m.texto;
+        div.dataset.msgType = m.tipo;
+        div.innerHTML = `
+            <i class="bi ${iconos[m.tipo] || iconos.info}" style="flex-shrink:0"></i>
+            <span style="flex:1">${m.texto}</span>
+            <button class="alert-close-btn" title="Ocultar" onclick="ocultarMensaje(this)">
+                <i class="bi bi-eye-slash"></i>
+            </button>`;
+        container.appendChild(div);
+        // Quitar de ocultos
+        ocultos.splice(idx, 1);
+        saveMsgsOcultos(ocultos);
+        actualizarIndicador();
+    }
+
+    function limpiarOcultos() {
+        saveMsgsOcultos([]);
+        actualizarIndicador();
+    }
+
+    function togglePanelOcultos() {
+        const panel   = document.getElementById('msgHiddenPanel');
+        const chevron = document.getElementById('msgPillChevron');
+        panel.classList.toggle('open');
+        chevron.className = panel.classList.contains('open')
+            ? 'bi bi-chevron-down' : 'bi bi-chevron-up';
+        chevron.style.fontSize = '0.65rem';
+    }
+
+    // Cerrar panel al hacer click fuera
+    document.addEventListener('click', e => {
+        const ind = document.getElementById('msgIndicator');
+        if (ind && !ind.contains(e.target))
+            document.getElementById('msgHiddenPanel')?.classList.remove('open');
+    });
+
+    // Mostrar indicador si ya había ocultos de antes (misma sesión)
+    actualizarIndicador();
+
+    /* ── Modal notificaciones — cerrar con Escape ── */
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape')
+            document.getElementById('notifModal')?.classList.remove('open');
+    });
+
+    /* ════════════════════════════════════════════════════════
+       SISTEMA DE ALERTAS EN TIEMPO REAL — CITAS PRÓXIMAS
+    ════════════════════════════════════════════════════════ */
+    {% if user.is_authenticated %}
+
+    const ALERTAS_URL  = '{% url "citas:api_alertas_proximas" %}';
+    const ALERTAS_KEY  = 'cn_alertas_v1';
+    const TOAST_DURACION = 18000; // ms antes de auto-cerrar
+
+    // ── Persistencia (localStorage por día) ──────────────────
+    function _alertasHoy() {
+        try {
+            const raw = JSON.parse(localStorage.getItem(ALERTAS_KEY) || '{}');
+            const hoy = new Date().toDateString();
+            if (raw.fecha !== hoy) { localStorage.removeItem(ALERTAS_KEY); return {}; }
+            return raw.ids || {};
+        } catch { return {}; }
+    }
+    function _guardarAlerta(key) {
+        try {
+            const hoy = new Date().toDateString();
+            let raw = JSON.parse(localStorage.getItem(ALERTAS_KEY) || '{}');
+            if (raw.fecha !== hoy) raw = { fecha: hoy, ids: {} };
+            raw.ids[key] = Date.now();
+            localStorage.setItem(ALERTAS_KEY, JSON.stringify(raw));
+        } catch {}
+    }
+    function _yaNotificado(key) {
+        const ids = _alertasHoy();
+        const ts  = ids[key];
+        if (!ts) return false;
+        return (Date.now() - ts) < 22 * 60 * 1000; // ventana 22 min
+    }
+
+    // ── Sonido con Web Audio API ──────────────────────────────
+    function sonarAlerta(urgente) {
+        try {
+            const ctx  = new (window.AudioContext || window.webkitAudioContext)();
+            const gain = ctx.createGain();
+            gain.connect(ctx.destination);
+            const notas = urgente ? [880, 660, 880] : [660, 880];
+            notas.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                osc.connect(gain);
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.25, ctx.currentTime + i * 0.22);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.22 + 0.18);
+                osc.start(ctx.currentTime + i * 0.22);
+                osc.stop(ctx.currentTime + i * 0.22 + 0.2);
+            });
+        } catch {}
+    }
+
+    // ── Notificación del navegador ────────────────────────────
+    function notifNavegador(cita, urgente) {
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        const titulo = urgente
+            ? `⏰ ¡CITA AHORA! ${cita.hora}`
+            : `🔔 Cita en ${cita.mins_restantes} min — ${cita.hora}`;
+        try {
+            const n = new Notification(titulo, {
+                body: `${cita.cliente}\n${cita.servicio} · ${cita.barbero}`,
+                tag:  `cn-cita-${cita.id}-${urgente ? 'now' : 'pronto'}`,
+                requireInteraction: urgente,
+            });
+            n.onclick = () => { window.focus(); n.close(); };
+        } catch {}
+    }
+
+    // ── Construir y mostrar toast ─────────────────────────────
+    function mostrarToast(cita) {
+        const container = document.getElementById('cn-toasts');
+        if (!container) return;
+
+        const urgente   = cita.mins_restantes <= 0;
+        const esPronto  = !urgente && cita.mins_restantes <= 5;
+        const labelTime = urgente
+            ? '¡CITA AHORA!'
+            : esPronto
+                ? `¡EN ${cita.mins_restantes} MIN!`
+                : `En ${cita.mins_restantes} min`;
+
+        const toast = document.createElement('div');
+        toast.className = 'cn-toast' + (urgente ? ' ahora' : '');
+        toast.dataset.toastId = cita.id;
+        toast.innerHTML = `
+            <div class="cn-toast-hdr">
+                <i class="bi bi-alarm-fill"></i>
+                <span>${labelTime}</span>
+                <button class="cn-toast-close" title="Cerrar">×</button>
+            </div>
+            <div class="cn-toast-body">
+                <div class="cn-toast-cliente">${cita.cliente}</div>
+                <div class="cn-toast-meta"><i class="bi bi-clock me-1"></i>${cita.hora} · ${cita.servicio}</div>
+                <div class="cn-toast-meta" style="font-size:0.65rem;opacity:0.65"><i class="bi bi-person me-1"></i>${cita.barbero}</div>
+            </div>
+            <div class="cn-toast-footer">
+                <a href="/citas/${cita.id}/">Ver cita →</a>
+                <button class="cn-toast-dismiss">Cerrar</button>
+            </div>
+            <div class="cn-toast-progress" style="animation-duration:${TOAST_DURACION}ms"></div>`;
+
+        // Botones de cierre
+        const cerrar = () => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(80px)';
+            setTimeout(() => toast.remove(), 320);
+        };
+        toast.querySelector('.cn-toast-close').addEventListener('click', cerrar);
+        toast.querySelector('.cn-toast-dismiss').addEventListener('click', cerrar);
+
+        container.appendChild(toast);
+
+        // Auto-cerrar
+        setTimeout(cerrar, TOAST_DURACION);
+    }
+
+    // ── Actualizar campana (badge + pulso) ────────────────────
+    function actualizarCampana(alertas) {
+        const btn = document.getElementById('notifBtn');
+        if (!btn) return;
+        if (alertas.length > 0) {
+            btn.classList.add('alerta-activa');
+            let badge = btn.querySelector('.notif-badge');
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'notif-badge';
+                btn.appendChild(badge);
+            }
+            badge.textContent = alertas.length;
+        } else {
+            btn.classList.remove('alerta-activa');
+        }
+    }
+
+    // ── Polling principal ─────────────────────────────────────
+    async function verificarAlertas() {
+        try {
+            const resp = await fetch(ALERTAS_URL, { credentials: 'same-origin' });
+            if (!resp.ok) return;
+            const { alertas } = await resp.json();
+
+            actualizarCampana(alertas);
+
+            let hayNuevas = false;
+            let hayUrgente = false;
+
+            for (const cita of alertas) {
+                // Dos brackets independientes: "pronto" (1-15 min) y "ahora" (≤ 0 min)
+                const bracket = cita.mins_restantes <= 0 ? 'ahora' : 'pronto';
+                const key = `${cita.id}-${bracket}`;
+
+                if (_yaNotificado(key)) continue;
+
+                mostrarToast(cita);
+                notifNavegador(cita, bracket === 'ahora');
+                _guardarAlerta(key);
+                hayNuevas = true;
+                if (bracket === 'ahora') hayUrgente = true;
+            }
+
+            if (hayNuevas) sonarAlerta(hayUrgente);
+
+        } catch {}
+    }
+
+    // ── Pedir permiso de notificaciones al hacer click en bell ─
+    if (notifBtn) {
+        notifBtn.addEventListener('click', () => {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        }, { once: true });
+    }
+
+    // ── Iniciar ───────────────────────────────────────────────
+    // Verificar al cargar (pequeño delay para no bloquear render)
+    setTimeout(verificarAlertas, 1500);
+    // Verificar cada 60 segundos
+    setInterval(verificarAlertas, 60000);
+
+    {% endif %}
+
+    // ── Teclado correcto en móvil para todos los formularios ──────────────────
+    document.addEventListener('DOMContentLoaded', function () {
+        // Campos de texto → teclado alfanumérico
+        document.querySelectorAll(
+            'input[type="text"], input[type="search"], textarea'
+        ).forEach(function (el) {
+            if (!el.hasAttribute('inputmode')) el.setAttribute('inputmode', 'text');
+        });
+
+        // Campos de email → teclado con @ y .com
+        document.querySelectorAll('input[type="email"]').forEach(function (el) {
+            if (!el.hasAttribute('inputmode')) el.setAttribute('inputmode', 'email');
+        });
+
+        // Campos de teléfono → teclado numérico con guiones
+        document.querySelectorAll(
+            'input[type="tel"], input[name="telefono"], input[id*="telefono"]'
+        ).forEach(function (el) {
+            el.setAttribute('inputmode', 'tel');
+        });
+
+        // Campos numéricos con decimales → teclado decimal (incluye punto)
+        document.querySelectorAll('input[type="number"]').forEach(function (el) {
+            if (!el.hasAttribute('inputmode')) {
+                var step = parseFloat(el.getAttribute('step') || '1');
+                el.setAttribute('inputmode', step % 1 !== 0 ? 'decimal' : 'numeric');
+            }
+        });
+    });
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

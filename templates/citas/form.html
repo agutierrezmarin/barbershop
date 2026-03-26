@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="page-title">{{ titulo|upper }}</div>
+    <div class="page-subtitle">☠ Sistema de agendamiento</div>
+</div>
+<div class="row justify-content-center">
+<div class="col-lg-8">
+<div class="card-cn">
+    <div class="card-header">{{ titulo|upper }}</div>
+    <div class="card-body">
+        <form method="post" id="citaForm">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="mb-3">
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {% if field.html_name == 'cliente' %}
+                <!-- Campo Cliente con búsqueda -->
+                <div id="cliente-search-wrap" style="position:relative">
+                    <input type="search" id="cliente_search_input"
+                           class="form-control"
+                           placeholder="Buscar cliente por nombre..."
+                           autocomplete="off"
+                           inputmode="text"
+                           enterkeyhint="search"
+                           style="padding-right:2.2rem">
+                    <span id="cliente_clear_btn"
+                          style="display:none;position:absolute;right:0.6rem;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--cn-text-muted);font-size:1rem;line-height:1;padding:0.2rem"
+                          onclick="limpiarCliente()">✕</span>
+                    <div id="cliente_dropdown"
+                         style="display:none;position:absolute;top:100%;left:0;right:0;z-index:600;
+                                background:var(--cn-surface);border:1px solid var(--cn-accent);
+                                border-top:none;max-height:220px;overflow-y:auto;
+                                scrollbar-width:thin;scrollbar-color:var(--cn-border) transparent;
+                                box-shadow:0 8px 24px rgba(0,0,0,0.6)">
+                    </div>
+                </div>
+                {{ field }}
+                {% else %}
+                {{ field }}
+                {% endif %}
+                {% if field.errors %}<div style="color:#c05050;font-size:0.8rem;margin-top:3px">{{ field.errors.0 }}</div>{% endif %}
+                {% if field.help_text %}<div style="color:var(--cn-text-muted);font-size:0.75rem;margin-top:2px">{{ field.help_text }}</div>{% endif %}
+            </div>
+            {% endfor %}
+
+            <!-- Slots disponibles -->
+            <div id="slotsContainer" class="mb-3" style="display:none">
+                <label class="form-label">Slots Disponibles</label>
+                <div id="slotsList" class="d-flex flex-wrap gap-2"></div>
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn-cn-primary"><i class="bi bi-check-circle me-1"></i>GUARDAR CITA</button>
+                <a href="{% url 'citas:lista' %}" class="btn-cn-outline text-decoration-none">CANCELAR</a>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+// ── Buscador de clientes ───────────────────────────────────────────────────────
+(function () {
+    const nativeSel = document.getElementById('id_cliente');
+    if (!nativeSel) return;
+
+    // Ocultar select nativo
+    nativeSel.style.display = 'none';
+
+    const searchInput  = document.getElementById('cliente_search_input');
+    const dropdown     = document.getElementById('cliente_dropdown');
+    const clearBtn     = document.getElementById('cliente_clear_btn');
+
+    // Opciones válidas (excluir el "------" vacío)
+    const opciones = Array.from(nativeSel.options).filter(o => o.value !== '');
+
+    // Si estamos editando, pre-cargar el nombre del cliente seleccionado
+    if (nativeSel.value) {
+        const sel = nativeSel.options[nativeSel.selectedIndex];
+        if (sel && sel.value) {
+            searchInput.value = sel.text;
+            clearBtn.style.display = 'block';
+        }
+    }
+
+    function renderDropdown(query) {
+        const q = query.toLowerCase().trim();
+        const filtrados = q
+            ? opciones.filter(o => o.text.toLowerCase().includes(q))
+            : opciones;
+
+        if (filtrados.length === 0) {
+            dropdown.innerHTML = '<div style="padding:0.75rem 1rem;color:var(--cn-text-muted);font-family:var(--cn-font-mono);font-size:0.75rem;text-align:center">☠ Sin coincidencias</div>';
+        } else {
+            dropdown.innerHTML = filtrados.map(o =>
+                `<div class="cn-opt" data-val="${o.value}"
+                      style="padding:0.7rem 1rem;cursor:pointer;border-bottom:1px solid var(--cn-border);
+                             font-size:0.9rem;display:flex;align-items:center;gap:0.5rem;
+                             ${o.value === nativeSel.value ? 'background:rgba(200,169,81,0.12);color:var(--cn-accent)' : ''}">
+                    <i class="bi bi-person" style="opacity:0.5;font-size:0.8rem"></i>${o.text}
+                 </div>`
+            ).join('');
+        }
+        dropdown.style.display = 'block';
+
+        // Eventos en cada opción
+        dropdown.querySelectorAll('.cn-opt').forEach(el => {
+            // Desktop: mousedown (evita blur antes de selección)
+            el.addEventListener('mousedown', e => {
+                e.preventDefault();
+                seleccionar(el.dataset.val, el.textContent.trim());
+            });
+            // Hover visual
+            el.addEventListener('mouseenter', () => el.style.background = 'rgba(200,169,81,0.08)');
+            el.addEventListener('mouseleave', () => el.style.background = el.dataset.val === nativeSel.value ? 'rgba(200,169,81,0.12)' : '');
+        });
+    }
+
+    function seleccionar(val, texto) {
+        nativeSel.value = val;
+        searchInput.value = texto.replace(/^\s*\S+\s+/, '').trim(); // quitar ícono si quedó texto extra
+        // Volver a leer el texto real de la option
+        const op = opciones.find(o => o.value === val);
+        if (op) searchInput.value = op.text;
+        clearBtn.style.display = 'block';
+        dropdown.style.display = 'none';
+        searchInput.blur();
+    }
+
+    function limpiarCliente() {
+        nativeSel.value = '';
+        searchInput.value = '';
+        clearBtn.style.display = 'none';
+        searchInput.focus();
+    }
+    window.limpiarCliente = limpiarCliente;
+
+    // Abrir al hacer foco
+    searchInput.addEventListener('focus', () => renderDropdown(searchInput.value));
+
+    // Filtrar mientras escribe
+    searchInput.addEventListener('input', () => {
+        if (!searchInput.value.trim()) {
+            nativeSel.value = '';
+            clearBtn.style.display = 'none';
+        }
+        renderDropdown(searchInput.value);
+    });
+
+    // Cerrar al perder foco (con pequeño delay para que mousedown se registre)
+    let ocultarTimer;
+    searchInput.addEventListener('blur', () => {
+        ocultarTimer = setTimeout(() => {
+            dropdown.style.display = 'none';
+            // Si el texto no corresponde a una opción válida, limpiar
+            if (!nativeSel.value) searchInput.value = '';
+        }, 200);
+    });
+    // Cancelar ocultado si se toca el dropdown (mobile)
+    dropdown.addEventListener('touchstart', () => clearTimeout(ocultarTimer), { passive: true });
+    dropdown.addEventListener('touchend', e => {
+        const opt = e.target.closest('.cn-opt');
+        if (opt) seleccionar(opt.dataset.val, '');
+    });
+
+    // Tecla Escape cierra
+    searchInput.addEventListener('keydown', e => {
+        if (e.key === 'Escape') dropdown.style.display = 'none';
+    });
+})();
+
+// ── Slots disponibles ─────────────────────────────────────────────────────────
+const barberoSel = document.querySelector('[name="barbero"]');
+const fechaSel   = document.querySelector('[name="fecha_hora"]');
+
+function cargarSlots() {
+    const barbero = barberoSel?.value;
+    const fecha   = fechaSel?.value?.split('T')[0];
+    if (!barbero || !fecha) return;
+    fetch(`/citas/api/slots-disponibles/?barbero=${barbero}&fecha=${fecha}&minutos=30`)
+        .then(r => r.json())
+        .then(data => {
+            const cont = document.getElementById('slotsContainer');
+            const list = document.getElementById('slotsList');
+            if (data.slots && data.slots.length > 0) {
+                list.innerHTML = data.slots.map(s =>
+                    `<button type="button" class="btn-cn-outline slot-btn"
+                             style="font-family:var(--cn-font-mono);font-size:0.8rem"
+                             onclick="setSlot('${fecha}','${s}')">${s}</button>`
+                ).join('');
+            } else {
+                list.innerHTML = `<span style="color:var(--cn-text-muted);font-family:var(--cn-font-mono);font-size:0.8rem">${data.mensaje || 'Sin slots disponibles'}</span>`;
+            }
+            cont.style.display = 'block';
+        });
+}
+
+function setSlot(fecha, hora) {
+    if (fechaSel) fechaSel.value = `${fecha}T${hora}`;
+    document.querySelectorAll('.slot-btn').forEach(b => {
+        b.style.borderColor = '';
+        b.style.color = '';
+    });
+    event.target.style.borderColor = 'var(--cn-accent)';
+    event.target.style.color = 'var(--cn-accent)';
+}
+
+if (barberoSel) barberoSel.addEventListener('change', cargarSlots);
+if (fechaSel)   fechaSel.addEventListener('change', cargarSlots);
+</script>
+{% endblock %}

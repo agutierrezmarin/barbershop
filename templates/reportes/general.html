@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Reportes{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="page-title">REPORTES</div>
+    <div class="page-subtitle">☠ Análisis del negocio — mes en curso</div>
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-md-3 animate-fade"><div class="stat-card gold"><div class="stat-icon"><i class="bi bi-cash-coin"></i></div><div class="stat-value" style="font-size:1.8rem">Bs.{{ ingresos_mes }}</div><div class="stat-label">Ingresos del Mes</div></div></div>
+    <div class="col-md-3 animate-fade animate-delay-1"><div class="stat-card purple"><div class="stat-icon"><i class="bi bi-scissors"></i></div><div class="stat-value">{{ total_citas_mes }}</div><div class="stat-label">Citas del Mes</div></div></div>
+    <div class="col-md-3 animate-fade animate-delay-2"><div class="stat-card red"><div class="stat-icon"><i class="bi bi-x-circle"></i></div><div class="stat-value">{{ no_shows }}</div><div class="stat-label">No Shows</div></div></div>
+    <div class="col-md-3 animate-fade animate-delay-3"><div class="stat-card green"><div class="stat-icon"><i class="bi bi-person-plus"></i></div><div class="stat-value">{{ clientes_nuevos }}</div><div class="stat-label">Clientes Nuevos</div></div></div>
+</div>
+<div class="row g-3">
+    <div class="col-md-6 animate-fade">
+        <a href="{% url 'reportes:ingresos' %}" class="text-decoration-none">
+        <div class="card-cn" style="cursor:pointer">
+            <div class="card-body text-center py-4">
+                <div style="font-size:2.5rem;color:var(--cn-accent);margin-bottom:0.5rem"><i class="bi bi-bar-chart-fill"></i></div>
+                <div style="font-family:var(--cn-font-display);font-size:1.3rem;letter-spacing:3px;color:var(--cn-accent)">INGRESOS</div>
+                <div style="font-family:var(--cn-font-mono);font-size:0.7rem;color:var(--cn-text-muted);margin-top:0.3rem">Por día y método de pago</div>
+            </div>
+        </div></a>
+    </div>
+    <div class="col-md-6 animate-fade animate-delay-1">
+        <a href="{% url 'reportes:servicios' %}" class="text-decoration-none">
+        <div class="card-cn" style="cursor:pointer">
+            <div class="card-body text-center py-4">
+                <div style="font-size:2.5rem;color:var(--cn-accent);margin-bottom:0.5rem"><i class="bi bi-scissors"></i></div>
+                <div style="font-family:var(--cn-font-display);font-size:1.3rem;letter-spacing:3px;color:var(--cn-accent)">SERVICIOS</div>
+                <div style="font-family:var(--cn-font-mono);font-size:0.7rem;color:var(--cn-text-muted);margin-top:0.3rem">Los más vendidos</div>
+            </div>
+        </div></a>
+    </div>
+    <div class="col-md-6 animate-fade animate-delay-2">
+        <a href="{% url 'reportes:barberos' %}" class="text-decoration-none">
+        <div class="card-cn" style="cursor:pointer">
+            <div class="card-body text-center py-4">
+                <div style="font-size:2.5rem;color:var(--cn-accent);margin-bottom:0.5rem"><i class="bi bi-person-badge"></i></div>
+                <div style="font-family:var(--cn-font-display);font-size:1.3rem;letter-spacing:3px;color:var(--cn-accent)">BARBEROS</div>
+                <div style="font-family:var(--cn-font-mono);font-size:0.7rem;color:var(--cn-text-muted);margin-top:0.3rem">Productividad por barbero</div>
+            </div>
+        </div></a>
+    </div>
+    <div class="col-md-6 animate-fade animate-delay-3">
+        <a href="{% url 'reportes:clientes' %}" class="text-decoration-none">
+        <div class="card-cn" style="cursor:pointer">
+            <div class="card-body text-center py-4">
+                <div style="font-size:2.5rem;color:var(--cn-accent);margin-bottom:0.5rem"><i class="bi bi-people-fill"></i></div>
+                <div style="font-family:var(--cn-font-display);font-size:1.3rem;letter-spacing:3px;color:var(--cn-accent)">CLIENTES</div>
+                <div style="font-family:var(--cn-font-mono);font-size:0.7rem;color:var(--cn-text-muted);margin-top:0.3rem">Frecuencia y fidelidad</div>
+            </div>
+        </div></a>
+    </div>
+</div>
+{% endblock %}

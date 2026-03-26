@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Ventas{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div><div class="page-title">VENTAS</div><div class="page-subtitle">Registro de transacciones</div></div>
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
+        <a href="{% url 'ventas:corte_caja' %}" class="btn-cn-outline text-decoration-none"><i class="bi bi-safe2 me-1"></i>CORTE CAJA</a>
+        <a href="{% url 'ventas:nueva' %}" class="btn-cn-primary text-decoration-none"><i class="bi bi-plus-circle me-1"></i>NUEVA VENTA</a>
+    </div>
+</div>
+<div class="stat-card gold mb-4" style="max-width:300px">
+    <div class="stat-value">Bs.{{ total_hoy }}</div>
+    <div class="stat-label">Ingresos de Hoy</div>
+    <div class="stat-icon"><i class="bi bi-cash-coin"></i></div>
+</div>
+<div class="card-cn">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+        <table class="table-cn w-100">
+            <thead><tr>
+                <th class="col-hide-sm">#</th>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th class="col-hide-sm">Barbero</th>
+                <th class="col-hide-sm">Método</th>
+                <th>Total</th>
+                <th>Acciones</th>
+            </tr></thead>
+            <tbody>
+            {% for v in ventas %}
+            <tr>
+                <td class="col-hide-sm" style="font-family:var(--cn-font-mono);color:var(--cn-text-muted)">#{{ v.pk }}</td>
+                <td style="font-family:var(--cn-font-mono);font-size:0.85rem">{{ v.fecha|date:"d/m/Y H:i" }}</td>
+                <td>{{ v.cliente.nombre|default:"—" }}</td>
+                <td class="col-hide-sm">{{ v.barbero.usuario.get_full_name|default:v.barbero.usuario.username }}</td>
+                <td class="col-hide-sm"><span class="estado-badge badge-pendiente">{{ v.get_metodo_pago_display }}</span></td>
+                <td style="font-family:var(--cn-font-display);font-size:1.2rem;color:var(--cn-accent)">Bs.{{ v.total }}</td>
+                <td><a href="{% url 'ventas:detalle' v.pk %}" class="btn-cn-outline text-decoration-none" style="font-size:0.7rem;padding:0.2rem 0.5rem"><i class="bi bi-eye"></i></a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-center py-4" style="color:var(--cn-text-muted)">Sin ventas registradas</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

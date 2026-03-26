@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Cita #{{ cita.pk }}{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+        <div class="page-title">CITA #{{ cita.pk }}</div>
+        <div class="page-subtitle">{{ cita.fecha_hora|date:"l, d \d\e F \d\e Y" }}</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'citas:editar' cita.pk %}" class="btn-cn-outline text-decoration-none"><i class="bi bi-pencil me-1"></i>EDITAR</a>
+        {% if cita.estado != 'atendido' and cita.estado != 'cancelado' %}
+        <a href="{% url 'ventas:nueva' %}?cita={{ cita.pk }}" class="btn-cn-primary text-decoration-none"><i class="bi bi-cash-coin me-1"></i>REGISTRAR PAGO</a>
+        {% else %}
+        <a href="{% url 'ventas:nueva' %}?cita={{ cita.pk }}" class="btn-cn-outline text-decoration-none"><i class="bi bi-cash-coin me-1"></i>REGISTRAR PAGO</a>
+        {% endif %}
+    </div>
+</div>
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card-cn h-100">
+            <div class="card-header"><i class="bi bi-scissors me-2"></i>DETALLE DE CITA</div>
+            <div class="card-body">
+                <div class="mb-3"><span class="form-label">Estado</span><br><span class="estado-badge badge-{{ cita.estado }}">{{ cita.get_estado_display }}</span></div>
+                <div class="mb-3"><span class="form-label">Hora</span><br><span style="font-family:var(--cn-font-mono);color:var(--cn-accent);font-size:1.5rem">{{ cita.fecha_hora|date:"H:i" }}</span> — {{ cita.hora_fin|date:"H:i" }}</div>
+                <div class="mb-3"><span class="form-label">Duración</span><br>{{ cita.duracion_minutos }} minutos</div>
+                <div class="mb-3"><span class="form-label">Servicio</span><br><strong>{{ cita.servicio.nombre|default:"—" }}</strong>{% if cita.servicio %} · Bs. {{ cita.servicio.precio }}{% endif %}</div>
+                {% if cita.notas %}<div><span class="form-label">Notas</span><br>{{ cita.notas }}</div>{% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card-cn mb-3">
+            <div class="card-header"><i class="bi bi-person me-2"></i>CLIENTE</div>
+            <div class="card-body">
+                <strong style="font-size:1.1rem">{{ cita.cliente.nombre }}</strong><br>
+                <span style="font-family:var(--cn-font-mono);color:var(--cn-text-muted)">{{ cita.cliente.telefono }}</span>
+                {% if cita.cliente.preferencias %}<div class="mt-2"><span class="form-label">Preferencias</span><br>{{ cita.cliente.preferencias }}</div>{% endif %}
+                {% if cita.cliente.notas_internas %}<div class="mt-2 p-2" style="background:rgba(139,26,26,0.1);border-left:2px solid var(--cn-accent2)"><span class="form-label">Notas internas</span><br>{{ cita.cliente.notas_internas }}</div>{% endif %}
+                <a href="{% url 'clientes:detalle' cita.cliente.pk %}" class="btn-cn-outline text-decoration-none mt-3 d-inline-block" style="font-size:0.75rem">VER FICHA COMPLETA →</a>
+            </div>
+        </div>
+        <div class="card-cn">
+            <div class="card-header"><i class="bi bi-person-badge me-2"></i>BARBERO</div>
+            <div class="card-body">
+                <strong>{{ cita.barbero.usuario.get_full_name|default:cita.barbero.usuario.username }}</strong>
+                {% if cita.barbero.especialidad %}<div style="color:var(--cn-text-muted)">{{ cita.barbero.especialidad }}</div>{% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<div class="mt-3">
+    <form method="post" action="{% url 'citas:cambiar_estado' cita.pk %}" class="d-inline-flex align-items-center gap-2">
+        {% csrf_token %}
+        <label class="form-label mb-0">Cambiar estado:</label>
+        <select name="estado" class="form-select" style="width:auto">
+            {% for val,label in cita.Estado.choices %}<option value="{{ val }}" {% if cita.estado == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <button type="submit" class="btn-cn-primary">APLICAR</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(source venv_barber/bin/activate)",
+      "Bash(python manage.py makemigrations accounts)",
+      "Bash(sudo -u postgres psql -c \"GRANT ALL ON SCHEMA public TO cuervo_user;\" cuervo_negro_db)",
+      "Bash(sudo -u postgres psql -c \"GRANT ALL PRIVILEGES ON DATABASE cuervo_negro_db TO cuervo_user;\" cuervo_negro_db)",
+      "Bash(python manage.py makemigrations)",
+      "Bash(python -c \"from apps.barberos.forms import UsuarioCrearForm, UsuarioEditarForm, BarberoPerfilForm; print\\(''OK''\\)\")",
+      "Bash(python -c \"from apps.barberos.views import nuevo_barbero, editar_barbero; print\\(''OK''\\)\")",
+      "Bash(DJANGO_SETTINGS_MODULE=cuervo_negro.settings python -c \"import django; django.setup\\(\\); from apps.barberos.forms import UsuarioCrearForm, UsuarioEditarForm, BarberoPerfilForm; from apps.barberos.views import nuevo_barbero, editar_barbero; print\\(''OK''\\)\")",
+      "Bash(DJANGO_SETTINGS_MODULE=cuervo_negro.settings python -c \":*)",
+      "Bash(find /home/alejandro/Documents/proyectos-django/cuervo_negro/apps/citas -name \"*.pyc\" -delete)",
+      "Bash(find /home/alejandro/Documents/proyectos-django/cuervo_negro/apps/citas -name \"__pycache__\" -type d -exec rm -rf {} +)",
+      "Bash(python manage.py shell -c \":*)",
+      "Bash(python3 manage.py shell -c \":*)",
+      "Bash(pip show:*)",
+      "Bash(pip install:*)",
+      "Bash(python manage.py makemigrations citas)",
+      "Bash(python manage.py migrate citas)"
+    ]
+  }
+}

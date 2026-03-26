@@ -1,0 +1,791 @@
+{% extends "base.html" %}
+{% block title %}Agenda{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ── Contenedor calendario ── */
+    #calendar-wrap {
+        background: var(--cn-surface);
+        border: 1px solid var(--cn-border);
+        border-radius: 4px;
+        padding: 0.75rem;
+    }
+    #calendar { min-height: 600px; }
+
+    /* Soporte táctil — evita que el scroll del navegador bloquee la selección */
+    #calendar .fc-timegrid-body,
+    #calendar .fc-timegrid-slots,
+    #calendar .fc-timegrid-slot,
+    #calendar .fc-daygrid-body {
+        touch-action: none;
+    }
+    /* Área táctil de eventos más grande en móvil */
+    @media (max-width: 767px) {
+        .fc .fc-timegrid-slot { height: 2.8rem; }
+        .fc .fc-event { min-height: 28px; }
+    }
+
+    /* ── FullCalendar overrides ── */
+    .fc { --fc-border-color: var(--cn-border); --fc-today-bg-color: rgba(200,169,81,0.06); }
+    .fc .fc-toolbar-title { font-family: var(--cn-font-display); font-size: 1.4rem; letter-spacing: 2px; color: var(--cn-accent); }
+    .fc .fc-button { background: var(--cn-surface2) !important; border: 1px solid var(--cn-border) !important; color: var(--cn-text-muted) !important; font-family: var(--cn-font-body) !important; font-weight: 600 !important; font-size: 0.78rem !important; letter-spacing: 1px !important; text-transform: uppercase !important; box-shadow: none !important; padding: 0.3rem 0.7rem !important; }
+    .fc .fc-button:hover, .fc .fc-button-active { background: var(--cn-accent) !important; color: #000 !important; border-color: var(--cn-accent) !important; }
+    .fc .fc-button-primary:not(:disabled).fc-button-active { background: var(--cn-accent) !important; color: #000 !important; }
+    .fc .fc-col-header-cell { background: var(--cn-surface2); }
+    .fc .fc-col-header-cell-cushion { font-family: var(--cn-font-display) !important; letter-spacing: 1.5px; color: var(--cn-text) !important; text-decoration: none !important; font-size: 0.95rem; padding: 0.4rem 0.2rem; }
+    .fc .fc-timegrid-slot { height: 2.2rem; }
+    .fc .fc-timegrid-slot-label { font-family: var(--cn-font-mono); font-size: 0.68rem; color: var(--cn-text-muted); }
+    .fc .fc-resource-timeline .fc-resource-group { background: var(--cn-surface2); }
+    .fc-theme-standard td, .fc-theme-standard th { border-color: var(--cn-border); }
+    .fc-theme-standard .fc-scrollgrid { border-color: var(--cn-border); }
+    .fc .fc-daygrid-day-number { color: var(--cn-text-muted); font-family: var(--cn-font-mono); font-size: 0.75rem; }
+    .fc .fc-event { border-radius: 2px !important; cursor: pointer; }
+    .fc .fc-event-title { font-family: var(--cn-font-body) !important; font-weight: 600 !important; font-size: 0.82rem !important; }
+    .fc .fc-event-time { font-family: var(--cn-font-mono) !important; font-size: 0.72rem !important; }
+    .fc .fc-now-indicator-line { border-color: var(--cn-accent2) !important; border-width: 2px !important; }
+
+    /* ── Opacidad por estado ── */
+    .estado-atendido  { opacity: 0.65 !important; }
+    .estado-cancelado { opacity: 0.4  !important; }
+    .estado-no_show   { opacity: 0.35 !important; }
+
+    /* ── Modal ── */
+    .modal-cn { display: none; position: fixed; inset: 0; z-index: 2000; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); }
+    .modal-cn.show { display: flex; }
+    .modal-box { background: var(--cn-surface); border: 1px solid var(--cn-border); border-top: 2px solid var(--cn-accent); border-radius: 4px; width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; padding: 0; margin: 1rem; }
+    .modal-head { background: var(--cn-surface2); padding: 0.8rem 1.2rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--cn-border); }
+    .modal-head h5 { font-family: var(--cn-font-display); letter-spacing: 2px; color: var(--cn-accent); margin: 0; font-size: 1.1rem; }
+    .modal-close { background: none; border: none; color: var(--cn-text-muted); font-size: 1.2rem; cursor: pointer; padding: 0; line-height: 1; }
+    .modal-close:hover { color: var(--cn-accent2); }
+    .modal-body { padding: 1.2rem; }
+    .modal-footer { padding: 0.8rem 1.2rem; border-top: 1px solid var(--cn-border); display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+    /* ── Buscador cliente ── */
+    .client-search-wrap { position: relative; }
+    #clientResults { position: absolute; top: 100%; left: 0; right: 0; background: var(--cn-surface2); border: 1px solid var(--cn-accent); border-top: none; z-index: 100; max-height: 200px; overflow-y: auto; }
+    .client-result { padding: 0.5rem 0.8rem; cursor: pointer; font-size: 0.9rem; border-bottom: 1px solid var(--cn-border); transition: background 0.15s; }
+    .client-result:hover { background: rgba(200,169,81,0.1); }
+    .client-result small { color: var(--cn-text-muted); font-family: var(--cn-font-mono); font-size: 0.75rem; }
+
+    /* ── Leyenda barberos ── */
+    .legend-bar { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-family: var(--cn-font-body); font-size: 0.82rem; font-weight: 600; color: var(--cn-text-muted); cursor: pointer; padding: 0.25rem 0.6rem; border-radius: 2px; border: 1px solid transparent; transition: all 0.2s; }
+    .legend-item .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .legend-item.filtered { opacity: 0.35; text-decoration: line-through; }
+
+    /* ── Estado info en modal ── */
+    .estado-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:4px; }
+
+    /* ── Selector de fecha ── */
+    .fecha-shortcuts { display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.4rem; }
+    .fecha-shortcut {
+        background: var(--cn-surface2); border: 1px solid var(--cn-border);
+        color: var(--cn-text-muted); font-family: var(--cn-font-mono); font-size: 0.7rem;
+        padding: 0.25rem 0.6rem; border-radius: 2px; cursor: pointer;
+        transition: all 0.15s; white-space: nowrap;
+    }
+    .fecha-shortcut:hover, .fecha-shortcut.active {
+        border-color: var(--cn-accent); color: var(--cn-accent);
+        background: rgba(200,169,81,0.08);
+    }
+
+    /* ── Grilla de slots de hora ── */
+    .time-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+        gap: 0.3rem;
+        max-height: 160px;
+        overflow-y: auto;
+        padding: 0.1rem;
+        margin-top: 0.4rem;
+    }
+    .time-slot {
+        background: var(--cn-surface2); border: 1px solid var(--cn-border);
+        color: var(--cn-text-muted); font-family: var(--cn-font-mono); font-size: 0.75rem;
+        padding: 0.4rem 0.2rem; border-radius: 2px; cursor: pointer;
+        text-align: center; transition: all 0.15s; user-select: none;
+    }
+    .time-slot:hover  { border-color: var(--cn-accent); color: var(--cn-accent); }
+    .time-slot.active {
+        background: var(--cn-accent); border-color: var(--cn-accent);
+        color: #000; font-weight: 700;
+    }
+    .time-slot.pasado { opacity: 0.35; }
+    .time-input-wrap { display:flex; align-items:center; gap:0.5rem; margin-top:0.4rem; }
+    .time-input-wrap input[type="time"] {
+        flex: 1; font-family: var(--cn-font-mono); font-size: 1rem;
+        letter-spacing: 1px; text-align: center;
+    }
+
+    @media (max-width: 767px) {
+        .fc .fc-toolbar { flex-direction: column; gap: 0.4rem; }
+        .fc .fc-toolbar-title { font-size: 1rem; }
+        .modal-box { margin: 0.5rem; max-height: 96vh; }
+        .time-grid { grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+        <div class="page-title">AGENDA</div>
+        <div class="page-subtitle">☠ Calendario interactivo — arrastra para mover citas</div>
+    </div>
+    <button class="btn-cn-primary" id="btnNuevaCita">
+        <i class="bi bi-plus-circle me-1"></i>NUEVA CITA
+    </button>
+</div>
+
+<!-- Leyenda de barberos -->
+<div class="legend-bar" id="legendBar">
+    {% for b in barberos %}
+    <div class="legend-item" data-resource="{{ b.pk }}" title="{{ b.especialidad }}">
+        <span class="dot" style="background:{{ colores_barberos|default:'' }}"></span>
+        {{ b.usuario.get_full_name|default:b.usuario.username }}
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Calendario -->
+<div id="calendar-wrap">
+    <div id="calendar"></div>
+</div>
+
+<!-- ══ MODAL: Crear / Editar cita ══════════════════════════════════════════ -->
+<div class="modal-cn" id="modalCita">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h5 id="modalTitulo"><i class="bi bi-calendar-plus me-2"></i>NUEVA CITA</h5>
+            <button class="modal-close" id="btnCerrarModal"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="citaId">
+
+            <div class="row g-3">
+                <!-- Cliente -->
+                <div class="col-12">
+                    <label class="form-label">Cliente *</label>
+                    <div class="client-search-wrap">
+                        <input type="search" id="clienteInput" class="form-control" placeholder="Buscar por nombre o teléfono..." autocomplete="off" inputmode="text" enterkeyhint="search">
+                        <div id="clientResults"></div>
+                    </div>
+                    <input type="hidden" id="clienteId">
+                    <div id="clienteSeleccionado" style="margin-top:5px;font-family:var(--cn-font-mono);font-size:0.75rem;color:var(--cn-accent)"></div>
+                </div>
+
+                <!-- Barbero -->
+                <div class="col-md-6">
+                    <label class="form-label">Barbero *</label>
+                    <select id="barberoId" class="form-select">
+                        {% for b in barberos %}
+                        <option value="{{ b.pk }}">{{ b.usuario.get_full_name|default:b.usuario.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Servicio -->
+                <div class="col-md-6">
+                    <label class="form-label">Servicio</label>
+                    <select id="servicioId" class="form-select">
+                        <option value="">— Sin servicio —</option>
+                    </select>
+                </div>
+
+                <!-- Fecha -->
+                <div class="col-12">
+                    <label class="form-label"><i class="bi bi-calendar3 me-1"></i>Fecha *</label>
+                    <input type="date" id="citaFecha" class="form-control"
+                           style="font-family:var(--cn-font-mono);font-size:1rem;letter-spacing:1px">
+                    <div class="fecha-shortcuts" id="fechaShortcuts">
+                        <span class="fecha-shortcut" onclick="setFechaHoy()">Hoy</span>
+                        <span class="fecha-shortcut" onclick="setFechaManana()">Mañana</span>
+                        <span class="fecha-shortcut" id="shortcutLunes"   onclick="setFechaDia(1)"></span>
+                        <span class="fecha-shortcut" id="shortcutMartes"  onclick="setFechaDia(2)"></span>
+                        <span class="fecha-shortcut" id="shortcutMiercoles" onclick="setFechaDia(3)"></span>
+                        <span class="fecha-shortcut" id="shortcutJueves"  onclick="setFechaDia(4)"></span>
+                        <span class="fecha-shortcut" id="shortcutViernes" onclick="setFechaDia(5)"></span>
+                        <span class="fecha-shortcut" id="shortcutSabado"  onclick="setFechaDia(6)"></span>
+                    </div>
+                </div>
+
+                <!-- Hora -->
+                <div class="col-12">
+                    <label class="form-label"><i class="bi bi-clock me-1"></i>Hora *</label>
+                    <div class="time-input-wrap">
+                        <input type="time" id="citaHora" class="form-control"
+                               step="900" style="font-family:var(--cn-font-mono);font-size:1.1rem;text-align:center">
+                        <span style="font-family:var(--cn-font-mono);font-size:0.7rem;color:var(--cn-text-muted);white-space:nowrap">
+                            o elige:
+                        </span>
+                    </div>
+                    <div class="time-grid" id="timeGrid"></div>
+                </div>
+
+                <!-- Duración -->
+                <div class="col-12">
+                    <label class="form-label"><i class="bi bi-hourglass-split me-1"></i>Duración</label>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <label class="fecha-shortcut" style="cursor:pointer">
+                            <input type="radio" name="duracion_radio" value="15" style="display:none"> 15 min
+                        </label>
+                        <label class="fecha-shortcut" style="cursor:pointer">
+                            <input type="radio" name="duracion_radio" value="30" checked style="display:none"> 30 min
+                        </label>
+                        <label class="fecha-shortcut" style="cursor:pointer">
+                            <input type="radio" name="duracion_radio" value="45" style="display:none"> 45 min
+                        </label>
+                        <label class="fecha-shortcut" style="cursor:pointer">
+                            <input type="radio" name="duracion_radio" value="60" style="display:none"> 1 hora
+                        </label>
+                        <label class="fecha-shortcut" style="cursor:pointer">
+                            <input type="radio" name="duracion_radio" value="90" style="display:none"> 1h 30m
+                        </label>
+                        <label class="fecha-shortcut" style="cursor:pointer">
+                            <input type="radio" name="duracion_radio" value="120" style="display:none"> 2 horas
+                        </label>
+                    </div>
+                    <input type="hidden" id="citaDuracion" value="30">
+                </div>
+
+                <!-- Estado -->
+                <div class="col-md-6">
+                    <label class="form-label">Estado</label>
+                    <select id="citaEstado" class="form-select">
+                        <option value="pendiente">Pendiente</option>
+                        <option value="confirmado">Confirmado</option>
+                        <option value="atendido">Atendido</option>
+                        <option value="cancelado">Cancelado</option>
+                        <option value="no_show">No Show</option>
+                    </select>
+                </div>
+
+                <!-- Precio -->
+                <div class="col-md-6">
+                    <label class="form-label">Precio cobrado (Bs)</label>
+                    <input type="number" id="citaPrecio" class="form-control" placeholder="0.00" step="0.01" min="0">
+                </div>
+
+                <!-- Notas -->
+                <div class="col-12">
+                    <label class="form-label">Notas</label>
+                    <textarea id="citaNotas" class="form-control" rows="2" placeholder="Observaciones..."></textarea>
+                </div>
+            </div>
+
+            <!-- Error -->
+            <div id="modalError" class="alert-cn error mt-3" style="display:none">
+                <i class="bi bi-exclamation-triangle me-2"></i><span id="modalErrorMsg"></span>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cn-primary" id="btnGuardarCita">
+                <i class="bi bi-check-circle me-1"></i>GUARDAR
+            </button>
+            <button class="btn-cn-danger" id="btnEliminarCita" style="display:none">
+                <i class="bi bi-trash me-1"></i>ELIMINAR
+            </button>
+            <button class="btn-cn-outline" id="btnCancelarModal">CANCELAR</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar-scheduler@6.1.11/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.11/locales/es.global.min.js"></script>
+<script>
+// ── Config ─────────────────────────────────────────────────────────────────
+const URLS = {
+    recursos:    "{% url 'citas:api_recursos' %}",
+    eventos:     "{% url 'citas:api_eventos' %}",
+    crear:       "{% url 'citas:api_crear_cita' %}",
+    mover:       (pk) => `/api/agenda/citas/${pk}/mover/`,
+    actualizar:  (pk) => `/api/agenda/citas/${pk}/actualizar/`,
+    eliminar:    (pk) => `/api/agenda/citas/${pk}/eliminar/`,
+    clientes:    "{% url 'citas:api_buscar_clientes' %}",
+    servicios:   "{% url 'citas:api_servicios' %}",
+};
+const CSRF = "{{ csrf_token }}";
+
+// ── Estado global ────────────────────────────────────────────────────────
+let calendar, serviciosList = [], hiddenResources = new Set();
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+function csrfPost(url, body) {
+    return fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+        body: JSON.stringify(body),
+    }).then(r => r.json());
+}
+
+const pad = n => String(n).padStart(2, '0');
+
+function dateToYMD(d) {
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function dateToHM(d) {
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function getFechaHora() {
+    const f = document.getElementById('citaFecha').value;
+    const h = document.getElementById('citaHora').value;
+    return f && h ? new Date(`${f}T${h}`) : null;
+}
+
+function showError(msg) {
+    document.getElementById('modalError').style.display = '';
+    document.getElementById('modalErrorMsg').textContent = msg;
+}
+function hideError() {
+    document.getElementById('modalError').style.display = 'none';
+}
+
+// ── Selector de fecha ─────────────────────────────────────────────────────
+const DIAS_ES = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+function inicializarShortcutsDias() {
+    const hoy = new Date();
+    const ids = ['shortcutLunes','shortcutMartes','shortcutMiercoles',
+                 'shortcutJueves','shortcutViernes','shortcutSabado'];
+    // Mostrar próximos 6 días (excluyendo hoy y mañana)
+    let d = new Date(hoy); d.setDate(d.getDate() + 2);
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = `${DIAS_ES[d.getDay()]} ${d.getDate()}`;
+        el.dataset.fecha = dateToYMD(new Date(d));
+        el.onclick = () => setFechaValor(el.dataset.fecha);
+        d.setDate(d.getDate() + 1);
+    });
+}
+
+function setFechaValor(ymd) {
+    document.getElementById('citaFecha').value = ymd;
+    document.querySelectorAll('.fecha-shortcut').forEach(b => b.classList.remove('active'));
+    const hoy = dateToYMD(new Date());
+    const man  = dateToYMD(new Date(Date.now() + 86400000));
+    if (ymd === hoy) document.querySelector('.fecha-shortcut[onclick="setFechaHoy()"]').classList.add('active');
+    else if (ymd === man) document.querySelector('.fecha-shortcut[onclick="setFechaManana()"]').classList.add('active');
+    else {
+        document.querySelectorAll('[data-fecha]').forEach(b => {
+            if (b.dataset.fecha === ymd) b.classList.add('active');
+        });
+    }
+    actualizarTimeGrid();
+}
+function setFechaHoy()    { setFechaValor(dateToYMD(new Date())); }
+function setFechaManana() { setFechaValor(dateToYMD(new Date(Date.now() + 86400000))); }
+function setFechaDia(n)   { /* handled via data-fecha onclick */ }
+
+// ── Grilla de slots de hora ───────────────────────────────────────────────
+function construirTimeGrid() {
+    const grid = document.getElementById('timeGrid');
+    grid.innerHTML = '';
+    for (let h = 7; h <= 20; h++) {
+        for (let m = 0; m < 60; m += 30) {
+            const hm = `${pad(h)}:${pad(m)}`;
+            const btn = document.createElement('div');
+            btn.className = 'time-slot';
+            btn.textContent = hm;
+            btn.dataset.hora = hm;
+            btn.addEventListener('click', () => seleccionarSlot(hm));
+            grid.appendChild(btn);
+        }
+    }
+}
+
+function actualizarTimeGrid() {
+    const fecha = document.getElementById('citaFecha').value;
+    const hoy   = dateToYMD(new Date());
+    const ahora = new Date();
+    document.querySelectorAll('.time-slot').forEach(btn => {
+        const [h, m] = btn.dataset.hora.split(':').map(Number);
+        const esPasado = fecha === hoy && (h < ahora.getHours() || (h === ahora.getHours() && m <= ahora.getMinutes()));
+        btn.classList.toggle('pasado', esPasado);
+    });
+}
+
+function seleccionarSlot(hm) {
+    document.getElementById('citaHora').value = hm;
+    document.querySelectorAll('.time-slot').forEach(b => b.classList.remove('active'));
+    const btn = document.querySelector(`.time-slot[data-hora="${hm}"]`);
+    if (btn) {
+        btn.classList.add('active');
+        btn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+}
+
+// Sincronizar input time → highlight en grid
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('citaHora').addEventListener('input', function() {
+        document.querySelectorAll('.time-slot').forEach(b => b.classList.remove('active'));
+        const match = document.querySelector(`.time-slot[data-hora="${this.value}"]`);
+        if (match) match.classList.add('active');
+    });
+    document.getElementById('citaFecha').addEventListener('change', actualizarTimeGrid);
+});
+
+// ── Duración radios ───────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[name="duracion_radio"]').forEach(radio => {
+        const label = radio.closest('label');
+        radio.addEventListener('change', () => {
+            document.querySelectorAll('[name="duracion_radio"]').forEach(r =>
+                r.closest('label').classList.remove('active'));
+            label.classList.add('active');
+            document.getElementById('citaDuracion').value = radio.value;
+        });
+        // Marcar el default (30 min)
+        if (radio.checked) label.classList.add('active');
+    });
+});
+
+// ── Servicios (carga inicial) ─────────────────────────────────────────────
+async function cargarServicios() {
+    const data = await fetch(URLS.servicios).then(r => r.json());
+    serviciosList = data;
+    const sel = document.getElementById('servicioId');
+    sel.innerHTML = '<option value="">— Sin servicio —</option>';
+    data.forEach(s => {
+        sel.innerHTML += `<option value="${s.id}" data-duracion="${s.duracion}" data-precio="${s.precio}">${s.nombre} — Bs.${s.precio}</option>`;
+    });
+}
+
+// ── Buscador de clientes ───────────────────────────────────────────────────
+let clienteTimeout;
+document.getElementById('clienteInput').addEventListener('input', function () {
+    clearTimeout(clienteTimeout);
+    const q = this.value.trim();
+    if (q.length < 2) { document.getElementById('clientResults').innerHTML = ''; return; }
+    clienteTimeout = setTimeout(async () => {
+        const data = await fetch(`${URLS.clientes}?q=${encodeURIComponent(q)}`).then(r => r.json());
+        const box = document.getElementById('clientResults');
+        if (!data.length) { box.innerHTML = '<div class="client-result" style="color:var(--cn-text-muted)">Sin resultados</div>'; return; }
+        box.innerHTML = data.map(c =>
+            `<div class="client-result" data-id="${c.id}" data-nombre="${c.nombre}" data-tel="${c.telefono}">
+                ${c.nombre} <small>${c.telefono}</small>
+             </div>`
+        ).join('');
+        box.querySelectorAll('.client-result[data-id]').forEach(el => {
+            el.addEventListener('click', () => {
+                seleccionarCliente(el.dataset.id, el.dataset.nombre, el.dataset.tel);
+            });
+        });
+    }, 280);
+});
+
+function seleccionarCliente(id, nombre, telefono) {
+    document.getElementById('clienteId').value = id;
+    document.getElementById('clienteInput').value = nombre;
+    document.getElementById('clienteSeleccionado').textContent = `✔ ${nombre} · ${telefono}`;
+    document.getElementById('clientResults').innerHTML = '';
+}
+
+// Cerrar dropdown al click afuera
+document.addEventListener('click', e => {
+    if (!e.target.closest('.client-search-wrap')) {
+        document.getElementById('clientResults').innerHTML = '';
+    }
+});
+
+// Auto-rellenar duración y precio al cambiar servicio
+document.getElementById('servicioId').addEventListener('change', function () {
+    const opt = this.options[this.selectedIndex];
+    if (opt.value) {
+        const dur = opt.dataset.duracion;
+        const precio = opt.dataset.precio;
+        // Seleccionar la duración más cercana
+        const durSel = document.getElementById('citaDuracion');
+        [...durSel.options].forEach(o => o.selected = (o.value == dur));
+        if (!document.getElementById('citaPrecio').value) {
+            document.getElementById('citaPrecio').value = precio;
+        }
+    }
+});
+
+// ── Modal ────────────────────────────────────────────────────────────────
+function resetDuracion(val) {
+    document.querySelectorAll('[name="duracion_radio"]').forEach(r => {
+        r.closest('label').classList.remove('active');
+        if (r.value == val) { r.checked = true; r.closest('label').classList.add('active'); }
+    });
+    document.getElementById('citaDuracion').value = val;
+}
+
+function abrirModalNuevo({ start, resourceId } = {}) {
+    document.getElementById('citaId').value = '';
+    document.getElementById('clienteId').value = '';
+    document.getElementById('clienteInput').value = '';
+    document.getElementById('clienteSeleccionado').textContent = '';
+    document.getElementById('clientResults').innerHTML = '';
+    document.getElementById('barberoId').value = resourceId || document.getElementById('barberoId').options[0]?.value || '';
+    document.getElementById('servicioId').value = '';
+
+    const dt = start ? new Date(start) : new Date();
+    setFechaValor(dateToYMD(dt));
+    seleccionarSlot(dateToHM(dt));
+
+    resetDuracion('30');
+    document.getElementById('citaEstado').value = 'pendiente';
+    document.getElementById('citaPrecio').value = '';
+    document.getElementById('citaNotas').value = '';
+    document.getElementById('btnEliminarCita').style.display = 'none';
+    document.getElementById('modalTitulo').innerHTML = '<i class="bi bi-calendar-plus me-2"></i>NUEVA CITA';
+    hideError();
+    document.getElementById('modalCita').classList.add('show');
+    document.getElementById('clienteInput').focus();
+}
+
+function abrirModalEditar(props, eventId) {
+    document.getElementById('citaId').value = eventId;
+    document.getElementById('clienteId').value = props.cliente_id;
+    document.getElementById('clienteInput').value = props.cliente_nombre;
+    document.getElementById('clienteSeleccionado').textContent = `✔ ${props.cliente_nombre} · ${props.cliente_telefono}`;
+    document.getElementById('clientResults').innerHTML = '';
+    document.getElementById('barberoId').value = props.barbero_id;
+    document.getElementById('servicioId').value = props.servicio_id || '';
+
+    const dt = new Date(props._startIso);
+    setFechaValor(dateToYMD(dt));
+    seleccionarSlot(dateToHM(dt));
+
+    resetDuracion(String(props.duracion));
+    document.getElementById('citaEstado').value = props.estado;
+    document.getElementById('citaPrecio').value = props.precio_cobrado || '';
+    document.getElementById('citaNotas').value = props.notas || '';
+    document.getElementById('btnEliminarCita').style.display = '';
+    document.getElementById('modalTitulo').innerHTML = '<i class="bi bi-pencil-square me-2"></i>EDITAR CITA';
+    hideError();
+    document.getElementById('modalCita').classList.add('show');
+}
+
+function cerrarModal() {
+    document.getElementById('modalCita').classList.remove('show');
+}
+
+document.getElementById('btnCerrarModal').addEventListener('click', cerrarModal);
+document.getElementById('btnCancelarModal').addEventListener('click', cerrarModal);
+document.getElementById('modalCita').addEventListener('click', e => {
+    if (e.target === e.currentTarget) cerrarModal();
+});
+
+// ── Guardar cita ──────────────────────────────────────────────────────────
+document.getElementById('btnGuardarCita').addEventListener('click', async () => {
+    hideError();
+    const id        = document.getElementById('citaId').value;
+    const clienteId = document.getElementById('clienteId').value;
+    const barberoId = document.getElementById('barberoId').value;
+    const dt        = getFechaHora();
+
+    if (!clienteId) { showError('Selecciona un cliente.'); return; }
+    if (!barberoId) { showError('Selecciona un barbero.'); return; }
+    if (!document.getElementById('citaFecha').value) { showError('Selecciona una fecha.'); return; }
+    if (!document.getElementById('citaHora').value)  { showError('Selecciona una hora.'); return; }
+
+    const payload = {
+        cliente_id:  clienteId,
+        barbero_id:  barberoId,
+        servicio_id: document.getElementById('servicioId').value || null,
+        start:       dt.toISOString(),
+        duracion:    parseInt(document.getElementById('citaDuracion').value),
+        estado:      document.getElementById('citaEstado').value,
+        precio:      document.getElementById('citaPrecio').value || null,
+        notas:       document.getElementById('citaNotas').value,
+    };
+
+    const btn = document.getElementById('btnGuardarCita');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    try {
+        let resp;
+        if (id) {
+            resp = await csrfPost(URLS.actualizar(id), payload);
+        } else {
+            resp = await csrfPost(URLS.crear, payload);
+        }
+        if (resp.ok) {
+            cerrarModal();
+            calendar.refetchEvents();
+        } else {
+            showError(resp.error || 'Error al guardar.');
+        }
+    } catch(e) {
+        showError('Error de conexión.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>GUARDAR';
+    }
+});
+
+// ── Eliminar cita ─────────────────────────────────────────────────────────
+document.getElementById('btnEliminarCita').addEventListener('click', async () => {
+    const id = document.getElementById('citaId').value;
+    if (!id || !confirm('¿Eliminar esta cita?')) return;
+    const resp = await csrfPost(URLS.eliminar(id), {});
+    if (resp.ok) { cerrarModal(); calendar.refetchEvents(); }
+    else showError(resp.error || 'Error al eliminar.');
+});
+
+document.getElementById('btnNuevaCita').addEventListener('click', () => abrirModalNuevo());
+
+// ── Leyenda / filtro de barberos ──────────────────────────────────────────
+document.querySelectorAll('#legendBar .legend-item').forEach(item => {
+    item.addEventListener('click', () => {
+        const resId = item.dataset.resource;
+        if (hiddenResources.has(resId)) {
+            hiddenResources.delete(resId);
+            item.classList.remove('filtered');
+        } else {
+            hiddenResources.add(resId);
+            item.classList.add('filtered');
+        }
+        // Filtrar recursos visibles
+        calendar.getResources().forEach(r => {
+            r.setProp('display', hiddenResources.has(r.id) ? 'none' : 'auto');
+        });
+    });
+});
+
+// ── FullCalendar init ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+    construirTimeGrid();
+    inicializarShortcutsDias();
+    await cargarServicios();
+
+    // Asignar colores a la leyenda después de cargar recursos
+    const resourcesData = await fetch(URLS.recursos).then(r => r.json());
+    document.querySelectorAll('#legendBar .legend-item').forEach(item => {
+        const res = resourcesData.find(r => r.id === item.dataset.resource);
+        if (res) {
+            item.querySelector('.dot').style.background = res.eventBackgroundColor;
+            item.style.borderColor = res.eventBackgroundColor + '55';
+        }
+    });
+
+    const calendarEl = document.getElementById('calendar');
+    calendar = new FullCalendar.Calendar(calendarEl, {
+        schedulerLicenseKey: 'GPL-My-Project-Is-Open-Source',
+        locale: 'es',
+        timeZone: 'local',
+        initialView: 'timeGridWeek',
+        headerToolbar: {
+            left:   'prev,next today',
+            center: 'title',
+            right:  'timeGridWeek,resourceTimeGridDay,dayGridMonth',
+        },
+        buttonText: {
+            today:               'Hoy',
+            timeGridWeek:        'Semana',
+            resourceTimeGridDay: 'Día',
+            dayGridMonth:        'Mes',
+        },
+        slotMinTime: '07:00:00',
+        slotMaxTime: '21:00:00',
+        slotDuration: '00:15:00',
+        slotLabelInterval: '00:30:00',
+        snapDuration: '00:15:00',
+        nowIndicator: true,
+        editable: true,
+        selectable: true,
+        selectMirror: true,
+        allDaySlot: false,
+        height: 'auto',
+        expandRows: true,
+        stickyHeaderDates: true,
+
+        // Soporte táctil móvil
+        longPressDelay: 300,
+        eventLongPressDelay: 300,
+        selectLongPressDelay: 300,
+
+        // Fuentes de datos
+        resources: resourcesData,
+        events: {
+            url: URLS.eventos,
+            method: 'GET',
+            failure: () => console.warn('Error cargando eventos'),
+        },
+
+        // Etiqueta de cada columna de barbero
+        resourceLabelContent: (info) => {
+            const esp = info.resource.extendedProps?.especialidad;
+            return {
+                html: `<div style="text-align:center;padding:2px 0">
+                    <div style="font-family:var(--cn-font-display);letter-spacing:1px;font-size:0.95rem;color:var(--cn-text)">
+                        ${info.resource.title}
+                    </div>
+                    ${esp ? `<div style="font-family:var(--cn-font-mono);font-size:0.62rem;color:var(--cn-text-muted);letter-spacing:1px">${esp}</div>` : ''}
+                </div>`
+            };
+        },
+
+        // Contenido del evento
+        eventContent: (info) => {
+            const p = info.event.extendedProps;
+            const servicio = p.servicio_nombre && p.servicio_nombre !== '—' ? p.servicio_nombre : '';
+            return {
+                html: `<div style="padding:2px 4px;overflow:hidden;height:100%">
+                    <div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:0.82rem">
+                        ${info.event.title}
+                    </div>
+                    ${servicio ? `<div style="font-size:0.72rem;opacity:0.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${servicio}</div>` : ''}
+                    <div style="font-family:var(--cn-font-mono);font-size:0.68rem;opacity:0.8">${info.timeText}</div>
+                </div>`
+            };
+        },
+
+        // Clic en celda vacía → crear cita
+        select: (info) => {
+            abrirModalNuevo({
+                start: info.start,
+                resourceId: info.resource ? info.resource.id : null,
+            });
+            calendar.unselect();
+        },
+
+        // Clic en evento → editar
+        eventClick: (info) => {
+            const e = info.event;
+            const p = e.extendedProps;
+            abrirModalEditar({
+                ...p,
+                _startIso: e.start.toISOString(),
+            }, e.id);
+        },
+
+        // Drag & drop dentro del calendario
+        eventDrop: async (info) => {
+            const resp = await csrfPost(URLS.mover(info.event.id), {
+                start:      info.event.start.toISOString(),
+                resourceId: info.newResource ? info.newResource.id : (info.event.getResources()[0]?.id || null),
+            });
+            if (!resp.ok) {
+                info.revert();
+                alert('Error al mover: ' + (resp.error || 'Conflicto de horario'));
+            }
+        },
+
+        // Resize (cambiar duración)
+        eventResize: async (info) => {
+            const dur = Math.round((info.event.end - info.event.start) / 60000);
+            const resp = await csrfPost(URLS.actualizar(info.event.id), {
+                start:   info.event.start.toISOString(),
+                duracion: dur,
+            });
+            if (!resp.ok) {
+                info.revert();
+                alert('Error al redimensionar: ' + (resp.error || 'Conflicto de horario'));
+            }
+        },
+
+        // Eventos cargados → pintar colores en la leyenda
+        eventsSet: () => {},
+    });
+
+    calendar.render();
+});
+</script>
+{% endblock %}

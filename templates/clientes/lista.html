@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Clientes{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div><div class="page-title">CLIENTES</div><div class="page-subtitle">Fichas y historial</div></div>
+    <a href="{% url 'clientes:nuevo' %}" class="btn-cn-primary text-decoration-none"><i class="bi bi-person-plus me-1"></i>NUEVO CLIENTE</a>
+</div>
+<div class="card-cn mb-3">
+    <div class="card-body">
+        <form method="get" class="d-flex gap-2 flex-wrap">
+            <input type="search" name="q" class="form-control" style="min-width:200px;flex:1" placeholder="Buscar por nombre o teléfono..." value="{{ q }}" inputmode="text" enterkeyhint="search">
+            <button type="submit" class="btn-cn-primary" style="white-space:nowrap"><i class="bi bi-search me-1"></i>BUSCAR</button>
+            {% if q %}<a href="{% url 'clientes:lista' %}" class="btn-cn-outline text-decoration-none" style="white-space:nowrap">LIMPIAR</a>{% endif %}
+        </form>
+    </div>
+</div>
+<div class="card-cn">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+        <table class="table-cn w-100">
+            <thead><tr>
+                <th>Nombre</th>
+                <th>Teléfono</th>
+                <th>Visitas</th>
+                <th class="col-hide-sm">Última Visita</th>
+                <th class="col-hide-sm">Preferencias</th>
+                <th>Acciones</th>
+            </tr></thead>
+            <tbody>
+            {% for c in clientes %}
+            <tr>
+                <td><strong>{{ c.nombre }}</strong></td>
+                <td style="font-family:var(--cn-font-mono)">{{ c.telefono }}</td>
+                <td><span style="font-family:var(--cn-font-mono);color:var(--cn-accent)">{{ c.total_visitas }}</span></td>
+                <td class="col-hide-sm" style="font-size:0.85rem;color:var(--cn-text-muted)">{{ c.ultima_visita|date:"d/m/Y"|default:"—" }}</td>
+                <td class="col-hide-sm" style="font-size:0.85rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ c.preferencias }}">{{ c.preferencias|truncatechars:40|default:"—" }}</td>
+                <td>
+                    <div class="d-flex gap-1">
+                        <a href="{% url 'clientes:detalle' c.pk %}" class="btn-cn-outline" style="font-size:0.7rem;padding:0.2rem 0.5rem"><i class="bi bi-eye"></i></a>
+                        <a href="{% url 'clientes:editar' c.pk %}" class="btn-cn-outline" style="font-size:0.7rem;padding:0.2rem 0.5rem"><i class="bi bi-pencil"></i></a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center py-4" style="color:var(--cn-text-muted)">☠ Sin clientes registrados</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

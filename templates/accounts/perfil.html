@@ -1,0 +1,349 @@
+{% extends "base.html" %}
+{% block title %}Mi Perfil{% endblock %}
+
+{% block extra_css %}
+<style>
+    .avatar-wrap {
+        position: relative; width: 120px; height: 120px; margin: 0 auto 1rem;
+    }
+    .avatar-img {
+        width: 120px; height: 120px; border-radius: 50%;
+        object-fit: cover; border: 3px solid var(--cn-accent);
+        background: var(--cn-surface2);
+    }
+    .avatar-placeholder {
+        width: 120px; height: 120px; border-radius: 50%;
+        background: var(--cn-surface2); border: 3px solid var(--cn-border);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 3rem; color: var(--cn-text-muted);
+    }
+    .avatar-edit-btn {
+        position: absolute; bottom: 4px; right: 4px;
+        width: 32px; height: 32px; border-radius: 50%;
+        background: var(--cn-accent); border: 2px solid var(--cn-bg);
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: background 0.2s;
+    }
+    .avatar-edit-btn:hover { background: #b09040; }
+    .avatar-edit-btn i { font-size: 0.85rem; color: #000; }
+    .profile-name {
+        font-family: var(--cn-font-display); font-size: 1.6rem;
+        letter-spacing: 2px; color: var(--cn-text); text-align: center;
+    }
+    .profile-role {
+        font-family: var(--cn-font-mono); font-size: 0.72rem;
+        letter-spacing: 2px; color: var(--cn-accent); text-align: center;
+        text-transform: uppercase;
+    }
+    .profile-meta {
+        font-family: var(--cn-font-mono); font-size: 0.75rem;
+        color: var(--cn-text-muted); text-align: center; margin-top: 0.3rem;
+    }
+    .tab-nav {
+        display: flex; gap: 0; border-bottom: 1px solid var(--cn-border);
+        margin-bottom: 1.5rem; overflow-x: auto;
+    }
+    .tab-btn {
+        background: none; border: none; border-bottom: 2px solid transparent;
+        color: var(--cn-text-muted); font-family: var(--cn-font-body);
+        font-weight: 600; font-size: 0.85rem; letter-spacing: 1px;
+        text-transform: uppercase; padding: 0.65rem 1.2rem;
+        cursor: pointer; transition: all 0.2s; white-space: nowrap;
+        margin-bottom: -1px;
+    }
+    .tab-btn.active { color: var(--cn-accent); border-bottom-color: var(--cn-accent); }
+    .tab-btn:hover   { color: var(--cn-accent); }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+    .pwd-strength { height: 4px; border-radius: 2px; margin-top: 4px; transition: all 0.3s; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+        <div class="page-title">MI PERFIL</div>
+        <div class="page-subtitle">☠ Configuración de cuenta y seguridad</div>
+    </div>
+</div>
+
+<div class="row g-3">
+
+    <!-- ── Columna izquierda: card de perfil ── -->
+    <div class="col-lg-4">
+        <div class="card-cn text-center p-4">
+
+            <!-- Avatar -->
+            <div class="avatar-wrap">
+                {% if usuario.foto %}
+                <img src="{{ usuario.foto.url }}" alt="foto" class="avatar-img" id="avatarPreview">
+                {% else %}
+                <div class="avatar-placeholder" id="avatarPreview">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                {% endif %}
+                <label for="fotoInput" class="avatar-edit-btn" title="Cambiar foto">
+                    <i class="bi bi-camera-fill"></i>
+                </label>
+            </div>
+
+            <div class="profile-name">{{ usuario.get_full_name|default:usuario.username }}</div>
+            <div class="profile-role">{{ usuario.get_rol_display }}</div>
+            <div class="profile-meta">
+                <i class="bi bi-at"></i> {{ usuario.username }}
+            </div>
+            {% if usuario.email %}
+            <div class="profile-meta"><i class="bi bi-envelope me-1"></i>{{ usuario.email }}</div>
+            {% endif %}
+            {% if usuario.telefono %}
+            <div class="profile-meta"><i class="bi bi-phone me-1"></i>{{ usuario.telefono }}</div>
+            {% endif %}
+            <div class="profile-meta mt-2">
+                <i class="bi bi-calendar3 me-1"></i>
+                Miembro desde {{ usuario.date_joined|date:"M Y" }}
+            </div>
+
+            <!-- Formulario foto (oculto, activado por el botón cámara) -->
+            <form method="post" enctype="multipart/form-data" id="fotoForm" class="mt-3">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="foto">
+                <input type="file" name="foto" id="fotoInput" accept="image/*" style="display:none">
+                <div id="fotoPreviewWrap" style="display:none" class="mt-2">
+                    <img id="fotoPreviewImg" src="" alt="preview"
+                         style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--cn-accent);margin-bottom:0.5rem">
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button type="submit" class="btn-cn-primary" style="font-size:0.78rem;padding:0.3rem 0.9rem">
+                            <i class="bi bi-check2 me-1"></i>Guardar
+                        </button>
+                        <button type="button" onclick="cancelarFoto()" class="btn-cn-outline" style="font-size:0.78rem;padding:0.3rem 0.9rem">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            {% if usuario.foto %}
+            <form method="post" class="mt-2">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="quitar_foto">
+                <button type="submit" class="btn-cn-outline" style="font-size:0.72rem;padding:0.25rem 0.7rem;color:#e07070;border-color:#e07070">
+                    <i class="bi bi-trash me-1"></i>Quitar foto
+                </button>
+            </form>
+            {% endif %}
+
+            <!-- Info del sistema -->
+            <div class="mt-4 pt-3" style="border-top:1px solid var(--cn-border)">
+                <div style="font-size:0.7rem;font-family:var(--cn-font-mono);color:var(--cn-text-muted)">
+                    <div>Último acceso</div>
+                    <div style="color:var(--cn-text)">
+                        {{ usuario.last_login|date:"d/m/Y H:i"|default:"—" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Columna derecha: formularios ── -->
+    <div class="col-lg-8">
+        <div class="card-cn">
+            <div class="card-body" style="padding:1.5rem">
+
+                <!-- Tabs -->
+                <div class="tab-nav">
+                    <button class="tab-btn active" onclick="showTab('datos', this)">
+                        <i class="bi bi-person me-1"></i>Datos personales
+                    </button>
+                    <button class="tab-btn" onclick="showTab('password', this)">
+                        <i class="bi bi-shield-lock me-1"></i>Contraseña
+                    </button>
+                </div>
+
+                <!-- Tab: Datos personales -->
+                <div class="tab-pane active" id="tab-datos">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="perfil">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Nombre</label>
+                                {{ perfil_form.first_name }}
+                                {% if perfil_form.first_name.errors %}
+                                <div style="color:#e07070;font-size:0.78rem">{{ perfil_form.first_name.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Apellido</label>
+                                {{ perfil_form.last_name }}
+                                {% if perfil_form.last_name.errors %}
+                                <div style="color:#e07070;font-size:0.78rem">{{ perfil_form.last_name.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Correo electrónico</label>
+                                {{ perfil_form.email }}
+                                {% if perfil_form.email.errors %}
+                                <div style="color:#e07070;font-size:0.78rem">{{ perfil_form.email.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Teléfono</label>
+                                {{ perfil_form.telefono }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Usuario</label>
+                                <input type="text" class="form-control" value="{{ usuario.username }}" disabled
+                                       style="opacity:0.5;cursor:not-allowed">
+                                <div style="font-size:0.72rem;color:var(--cn-text-muted);margin-top:3px">
+                                    El nombre de usuario no se puede cambiar.
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Rol</label>
+                                <input type="text" class="form-control" value="{{ usuario.get_rol_display }}" disabled
+                                       style="opacity:0.5;cursor:not-allowed">
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <button type="submit" class="btn-cn-primary">
+                                <i class="bi bi-check-circle me-1"></i>GUARDAR CAMBIOS
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Tab: Cambiar contraseña -->
+                <div class="tab-pane" id="tab-password">
+                    <form method="post" id="passwordForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="password">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Contraseña actual</label>
+                                <div style="position:relative">
+                                    {{ password_form.password_actual }}
+                                    <button type="button" class="btn-eye" onclick="togglePwd(this)" tabindex="-1"
+                                            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--cn-text-muted);cursor:pointer">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                {% if password_form.password_actual.errors %}
+                                <div style="color:#e07070;font-size:0.78rem;margin-top:3px">{{ password_form.password_actual.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Nueva contraseña</label>
+                                <div style="position:relative">
+                                    {{ password_form.password_nueva }}
+                                    <button type="button" class="btn-eye" onclick="togglePwd(this)" tabindex="-1"
+                                            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--cn-text-muted);cursor:pointer">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="pwd-strength" id="pwdStrengthBar" style="background:var(--cn-border)"></div>
+                                <div id="pwdStrengthLabel" style="font-size:0.7rem;font-family:var(--cn-font-mono);color:var(--cn-text-muted);margin-top:2px"></div>
+                                {% if password_form.password_nueva.errors %}
+                                <div style="color:#e07070;font-size:0.78rem;margin-top:3px">{{ password_form.password_nueva.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Confirmar nueva contraseña</label>
+                                <div style="position:relative">
+                                    {{ password_form.password_confirmar }}
+                                    <button type="button" class="btn-eye" onclick="togglePwd(this)" tabindex="-1"
+                                            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--cn-text-muted);cursor:pointer">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                {% if password_form.password_confirmar.errors %}
+                                <div style="color:#e07070;font-size:0.78rem;margin-top:3px">{{ password_form.password_confirmar.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <button type="submit" class="btn-cn-primary">
+                                <i class="bi bi-shield-check me-1"></i>CAMBIAR CONTRASEÑA
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Tabs ──────────────────────────────────────────────────────────────────
+function showTab(name, btn) {
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+}
+
+// Abrir tab de contraseña si hubo errores en ese form
+{% if password_form.errors %}
+document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.querySelector('.tab-btn:nth-child(2)');
+    if (btn) showTab('password', btn);
+});
+{% endif %}
+
+// ── Preview foto ──────────────────────────────────────────────────────────
+document.getElementById('fotoInput').addEventListener('change', function() {
+    if (!this.files || !this.files[0]) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        document.getElementById('fotoPreviewImg').src = e.target.result;
+        document.getElementById('fotoPreviewWrap').style.display = '';
+    };
+    reader.readAsDataURL(this.files[0]);
+});
+
+function cancelarFoto() {
+    document.getElementById('fotoInput').value = '';
+    document.getElementById('fotoPreviewWrap').style.display = 'none';
+}
+
+// ── Toggle mostrar contraseña ─────────────────────────────────────────────
+function togglePwd(btn) {
+    const input = btn.closest('div').querySelector('input');
+    const icon  = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'bi bi-eye';
+    }
+}
+
+// ── Indicador de fortaleza ────────────────────────────────────────────────
+document.querySelector('[name="password_nueva"]')?.addEventListener('input', function() {
+    const v = this.value;
+    const bar = document.getElementById('pwdStrengthBar');
+    const lbl = document.getElementById('pwdStrengthLabel');
+    let score = 0;
+    if (v.length >= 8)              score++;
+    if (/[A-Z]/.test(v))            score++;
+    if (/[0-9]/.test(v))            score++;
+    if (/[^A-Za-z0-9]/.test(v))    score++;
+
+    const niveles = [
+        { color: 'var(--cn-border)', text: '',              width: '0%'   },
+        { color: '#e07070',          text: 'Muy débil',     width: '25%'  },
+        { color: '#c8a951',          text: 'Débil',         width: '50%'  },
+        { color: '#a0c050',          text: 'Aceptable',     width: '75%'  },
+        { color: '#5aad5a',          text: 'Fuerte',        width: '100%' },
+    ];
+    const n = v.length === 0 ? 0 : Math.max(1, score);
+    bar.style.background = niveles[n].color;
+    bar.style.width      = niveles[n].width;
+    lbl.textContent      = niveles[n].text;
+    lbl.style.color      = niveles[n].color;
+});
+</script>
+{% endblock %}

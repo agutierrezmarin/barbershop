@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Inventario{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div><div class="page-title">INVENTARIO</div><div class="page-subtitle">Stock de productos</div></div>
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
+        <a href="{% url 'inventario:alertas' %}" class="btn-cn-danger text-decoration-none"><i class="bi bi-exclamation-triangle me-1"></i>ALERTAS</a>
+        <a href="{% url 'inventario:nuevo' %}" class="btn-cn-primary text-decoration-none"><i class="bi bi-plus-circle me-1"></i>NUEVO</a>
+    </div>
+</div>
+<div class="card-cn">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+        <table class="table-cn w-100">
+            <thead><tr>
+                <th>Producto</th>
+                <th class="col-hide-sm">Categoría</th>
+                <th class="col-hide-sm">Precio Venta</th>
+                <th>Stock</th>
+                <th class="col-hide-sm">Stock Mín.</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr></thead>
+            <tbody>
+            {% for p in productos %}
+            <tr {% if p.stock_bajo %}class="stock-alert"{% endif %}>
+                <td><strong>{{ p.nombre }}</strong></td>
+                <td class="col-hide-sm" style="font-size:0.85rem;color:var(--cn-text-muted)">{{ p.categoria.nombre|default:"—" }}</td>
+                <td class="col-hide-sm" style="font-family:var(--cn-font-mono);color:var(--cn-accent)">Bs.{{ p.precio_venta }}</td>
+                <td style="font-family:var(--cn-font-mono);font-size:1.1rem;{% if p.stock_bajo %}color:#c05050{% else %}color:#5aad5a{% endif %}">{{ p.stock_actual }}</td>
+                <td class="col-hide-sm" style="font-family:var(--cn-font-mono);color:var(--cn-text-muted)">{{ p.stock_minimo }}</td>
+                <td>
+                    {% if p.stock_bajo %}<span class="estado-badge" style="background:rgba(139,26,26,0.2);color:#c05050;border:1px solid rgba(139,26,26,0.4)">STOCK BAJO</span>
+                    {% else %}<span class="estado-badge" style="background:rgba(45,106,45,0.2);color:#5aad5a;border:1px solid rgba(45,106,45,0.4)">NORMAL</span>{% endif %}
+                </td>
+                <td>
+                    <div class="d-flex gap-1">
+                        <a href="{% url 'inventario:editar' p.pk %}" class="btn-cn-outline" style="font-size:0.7rem;padding:0.2rem 0.5rem"><i class="bi bi-pencil"></i></a>
+                        <a href="{% url 'inventario:ajuste_stock' p.pk %}" class="btn-cn-outline" style="font-size:0.7rem;padding:0.2rem 0.5rem"><i class="bi bi-arrow-left-right"></i></a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-center py-4" style="color:var(--cn-text-muted)">Sin productos</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

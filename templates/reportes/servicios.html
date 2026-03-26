@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Reporte Servicios{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div><div class="page-title">SERVICIOS MÁS VENDIDOS</div><div class="page-subtitle">Últimos {{ dias }} días</div></div>
+    <form method="get" class="d-flex gap-2 align-items-center">
+        <select name="dias" class="form-select" style="width:auto" onchange="this.form.submit()">
+            <option value="7" {% if dias == 7 %}selected{% endif %}>7 días</option>
+            <option value="30" {% if dias == 30 %}selected{% endif %}>30 días</option>
+            <option value="90" {% if dias == 90 %}selected{% endif %}>90 días</option>
+        </select>
+    </form>
+</div>
+<div class="card-cn">
+    <div class="card-body p-0">
+        <table class="table-cn w-100">
+            <thead><tr><th>#</th><th>Servicio</th><th>Veces Vendido</th><th>Ingresos</th></tr></thead>
+            <tbody>
+            {% for s in servicios %}
+            <tr>
+                <td style="font-family:var(--cn-font-mono);color:var(--cn-text-muted)">{{ forloop.counter }}</td>
+                <td><strong>{{ s.servicio__nombre|default:"—" }}</strong></td>
+                <td style="font-family:var(--cn-font-mono);color:var(--cn-accent)">{{ s.total_vendido }}</td>
+                <td style="font-family:var(--cn-font-mono)">Bs. {{ s.ingresos|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center py-4" style="color:var(--cn-text-muted)">Sin datos en este período</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

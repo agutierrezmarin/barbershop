@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ barbero }}{% endblock %}
+{% block content %}
+<div class="page-header"><div class="page-title">{{ barbero.usuario.get_full_name|upper }}</div></div>
+<div class="card-cn"><div class="card-body">
+    <p><span class="form-label">Especialidad</span><br>{{ barbero.especialidad|default:"—" }}</p>
+    <p><span class="form-label">Comisión</span><br>{{ barbero.comision_porcentaje }}%</p>
+    <a href="{% url 'barberos:editar' barbero.pk %}" class="btn-cn-primary text-decoration-none">EDITAR</a>
+</div></div>
+{% endblock %}

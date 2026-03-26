@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Barberos{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div><div class="page-title">BARBEROS</div><div class="page-subtitle">Equipo de trabajo</div></div>
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
+        <a href="{% url 'barberos:asistencia' %}" class="btn-cn-outline text-decoration-none"><i class="bi bi-calendar-check me-1"></i>ASISTENCIA</a>
+        <a href="{% url 'barberos:nuevo' %}" class="btn-cn-primary text-decoration-none"><i class="bi bi-person-plus me-1"></i>NUEVO BARBERO</a>
+    </div>
+</div>
+<div class="row g-3">
+{% for barbero in barberos %}
+<div class="col-md-4 animate-fade" style="animation-delay:{{ forloop.counter0|add:0 }}00ms">
+    <div class="card-cn">
+        <div class="card-body text-center">
+            <div style="font-size:3rem;margin-bottom:0.5rem">✂</div>
+            <h5 style="font-family:var(--cn-font-display);letter-spacing:2px;color:var(--cn-accent)">
+                {{ barbero.usuario.get_full_name|upper|default:barbero.usuario.username|upper }}
+            </h5>
+            {% if barbero.especialidad %}<p style="color:var(--cn-text-muted);font-size:0.85rem">{{ barbero.especialidad }}</p>{% endif %}
+            <div class="d-flex justify-content-center gap-3 mt-2 mb-3" style="font-family:var(--cn-font-mono);font-size:0.75rem;color:var(--cn-text-muted)">
+                <span>Comisión: <strong style="color:var(--cn-accent)">{{ barbero.comision_porcentaje }}%</strong></span>
+            </div>
+            <div class="d-flex justify-content-center gap-2">
+                <a href="{% url 'barberos:editar' barbero.pk %}" class="btn-cn-outline text-decoration-none" style="font-size:0.75rem"><i class="bi bi-pencil me-1"></i>EDITAR</a>
+                <a href="{% url 'barberos:horarios' barbero.pk %}" class="btn-cn-outline text-decoration-none" style="font-size:0.75rem"><i class="bi bi-clock me-1"></i>HORARIOS</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% empty %}
+<div class="col-12 text-center py-5" style="color:var(--cn-text-muted)">
+    <div style="font-size:3rem;opacity:0.3">✂</div>
+    <p style="font-family:var(--cn-font-mono);letter-spacing:2px">SIN BARBEROS REGISTRADOS</p>
+    <p style="font-size:0.85rem">Crea barberos desde el panel de administración</p>
+</div>
+{% endfor %}
+</div>
+{% endblock %}

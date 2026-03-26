@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Venta #{{ venta.pk }}{% endblock %}
+{% block content %}
+<div class="page-header"><div class="page-title">VENTA #{{ venta.pk }}</div><div class="page-subtitle">{{ venta.fecha|date:"d/m/Y H:i" }}</div></div>
+<div class="row g-3">
+    <div class="col-md-7">
+        <div class="card-cn">
+            <div class="card-header">ITEMS</div>
+            <div class="card-body p-0">
+                <table class="table-cn w-100">
+                    <thead><tr><th>Tipo</th><th>Descripción</th><th>Cant.</th><th>Precio</th><th>Subtotal</th></tr></thead>
+                    <tbody>
+                    {% for item in venta.items.all %}
+                    <tr>
+                        <td><span class="estado-badge badge-pendiente">{{ item.get_tipo_display }}</span></td>
+                        <td>{{ item.descripcion }}</td>
+                        <td style="font-family:var(--cn-font-mono)">{{ item.cantidad }}</td>
+                        <td style="font-family:var(--cn-font-mono)">Bs.{{ item.precio_unitario }}</td>
+                        <td style="font-family:var(--cn-font-mono);color:var(--cn-accent)">Bs.{{ item.subtotal }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-5">
+        <div class="card-cn">
+            <div class="card-header">RESUMEN</div>
+            <div class="card-body">
+                <div class="mb-2 d-flex justify-content-between"><span class="form-label">Cliente</span><span>{{ venta.cliente.nombre|default:"—" }}</span></div>
+                <div class="mb-2 d-flex justify-content-between"><span class="form-label">Barbero</span><span>{{ venta.barbero.usuario.get_full_name }}</span></div>
+                <div class="mb-2 d-flex justify-content-between"><span class="form-label">Método</span><span>{{ venta.get_metodo_pago_display }}</span></div>
+                <div class="mb-2 d-flex justify-content-between"><span class="form-label">Subtotal</span><span style="font-family:var(--cn-font-mono)">Bs.{{ venta.subtotal }}</span></div>
+                <div class="mb-2 d-flex justify-content-between"><span class="form-label">Descuento</span><span style="font-family:var(--cn-font-mono)">Bs.{{ venta.descuento }}</span></div>
+                <div class="d-flex justify-content-between pt-2" style="border-top:1px solid var(--cn-border)">
+                    <strong style="font-family:var(--cn-font-display);letter-spacing:2px">TOTAL</strong>
+                    <strong style="font-family:var(--cn-font-display);font-size:1.5rem;color:var(--cn-accent)">Bs.{{ venta.total }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

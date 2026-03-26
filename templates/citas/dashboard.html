@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+        {% if barbero_actual %}
+        <div class="page-title">MI PANEL</div>
+        <div class="page-subtitle">☠ {{ request.user.get_full_name|default:request.user.username }} — {{ request.user.get_rol_display }}</div>
+        {% else %}
+        <div class="page-title">DASHBOARD</div>
+        <div class="page-subtitle">☠ Resumen operativo del día</div>
+        {% endif %}
+    </div>
+    <a href="{% url 'citas:nueva' %}" class="btn-cn-primary text-decoration-none">
+        <i class="bi bi-plus-circle me-1"></i>NUEVA CITA
+    </a>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3 animate-fade">
+        <div class="stat-card gold">
+            <div class="stat-icon"><i class="bi bi-scissors"></i></div>
+            <div class="stat-value">{{ total_citas }}</div>
+            <div class="stat-label">Citas Hoy</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3 animate-fade animate-delay-1">
+        <div class="stat-card green">
+            <div class="stat-icon"><i class="bi bi-check2-circle"></i></div>
+            <div class="stat-value">{{ citas_atendidas }}</div>
+            <div class="stat-label">Atendidas</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3 animate-fade animate-delay-2">
+        <div class="stat-card red">
+            <div class="stat-icon"><i class="bi bi-cash-coin"></i></div>
+            <div class="stat-value" style="font-size:1.8rem">Bs.{{ ingresos_hoy }}</div>
+            <div class="stat-label">{% if barbero_actual %}Mis Ingresos Hoy{% else %}Ingresos Hoy{% endif %}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3 animate-fade animate-delay-3">
+        {% if barbero_actual %}
+        <div class="stat-card purple">
+            <div class="stat-icon"><i class="bi bi-clock"></i></div>
+            <div class="stat-value">{{ citas_pendientes }}</div>
+            <div class="stat-label">Pendientes</div>
+        </div>
+        {% else %}
+        <div class="stat-card purple">
+            <div class="stat-icon"><i class="bi bi-people"></i></div>
+            <div class="stat-value">{{ clientes_total }}</div>
+            <div class="stat-label">Clientes Activos</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if productos_bajo_stock %}
+<div class="alert-cn error mb-4 animate-fade">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <strong>Alerta Stock:</strong> {{ productos_bajo_stock }} producto(s) con stock bajo.
+    <a href="{% url 'inventario:alertas' %}" style="color:var(--cn-accent); text-decoration:none; margin-left:8px; font-weight:700;">Ver alertas →</a>
+</div>
+{% endif %}
+
+<!-- Citas del día -->
+<div class="card-cn animate-fade">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-calendar-day me-2"></i>{% if barbero_actual %}MIS CITAS DE HOY{% else %}CITAS DE HOY{% endif %}</span>
+        <a href="{% url 'citas:lista' %}" style="font-family:var(--cn-font-mono);font-size:0.7rem;color:var(--cn-text-muted);text-decoration:none;letter-spacing:1px;">VER TODAS →</a>
+    </div>
+    <div class="card-body p-0">
+        {% if citas_hoy %}
+        <div class="table-responsive">
+            <table class="table-cn w-100">
+                <thead>
+                    <tr>
+                        <th>Hora</th>
+                        <th>Cliente</th>
+                        {% if not barbero_actual %}<th class="col-hide-sm">Barbero</th>{% endif %}
+                        <th>Servicio</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for cita in citas_hoy %}
+                <tr>
+                    <td><span style="font-family:var(--cn-font-mono);color:var(--cn-accent)">{{ cita.fecha_hora|date:"H:i" }}</span></td>
+                    <td><strong>{{ cita.cliente.nombre }}</strong><br><small style="color:var(--cn-text-muted)">{{ cita.cliente.telefono }}</small></td>
+                    {% if not barbero_actual %}<td class="col-hide-sm">{{ cita.barbero.usuario.get_full_name|default:cita.barbero.usuario.username }}</td>{% endif %}
+                    <td>{{ cita.servicio.nombre|default:"—" }}</td>
+                    <td><span class="estado-badge badge-{{ cita.estado }}">{{ cita.get_estado_display }}</span></td>
+                    <td>
+                        <a href="{% url 'citas:detalle' cita.pk %}" class="btn-cn-outline" style="font-size:0.7rem;padding:0.2rem 0.6rem">Ver</a>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5" style="color:var(--cn-text-muted)">
+            <div style="font-size:3rem;opacity:0.3">☠</div>
+            <p style="font-family:var(--cn-font-mono);font-size:0.8rem;letter-spacing:2px;margin-top:0.5rem">SIN CITAS PARA HOY</p>
+            <a href="{% url 'citas:nueva' %}" class="btn-cn-primary text-decoration-none mt-2 d-inline-block">AGENDAR PRIMERA CITA</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

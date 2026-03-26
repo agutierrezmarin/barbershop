@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Asistencia{% endblock %}
+{% block content %}
+<div class="page-header"><div class="page-title">ASISTENCIA</div><div class="page-subtitle">Control de entrada y salida</div></div>
+<div class="row justify-content-center"><div class="col-lg-6">
+<div class="card-cn">
+    <div class="card-header"><i class="bi bi-calendar-check me-2"></i>REGISTRAR ASISTENCIA</div>
+    <div class="card-body">
+        <form method="post">{% csrf_token %}
+            {% for field in form %}<div class="mb-3"><label class="form-label">{{ field.label }}</label>{{ field }}</div>{% endfor %}
+            <button type="submit" class="btn-cn-primary w-100">REGISTRAR</button>
+        </form>
+    </div>
+</div>
+</div></div>
+{% endblock %}

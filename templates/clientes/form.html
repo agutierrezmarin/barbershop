@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="page-header"><div class="page-title">{{ titulo|upper }}</div></div>
+<div class="row justify-content-center"><div class="col-lg-7">
+<div class="card-cn">
+    <div class="card-header">{{ titulo|upper }}</div>
+    <div class="card-body">
+        <form method="post">{% csrf_token %}
+            {% for field in form %}
+            <div class="mb-3">
+                <label class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<div style="color:#c05050;font-size:0.8rem">{{ field.errors.0 }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            <div class="d-flex gap-2 mt-3">
+                <button type="submit" class="btn-cn-primary">GUARDAR</button>
+                <a href="{% url 'clientes:lista' %}" class="btn-cn-outline text-decoration-none">CANCELAR</a>
+            </div>
+        </form>
+    </div>
+</div>
+</div></div>
+{% endblock %}

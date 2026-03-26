@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Ajuste Stock{% endblock %}
+{% block content %}
+<div class="page-header"><div class="page-title">AJUSTE DE STOCK</div><div class="page-subtitle">{{ producto.nombre }}</div></div>
+<div class="row justify-content-center"><div class="col-lg-5">
+<div class="stat-card gold mb-3 text-center"><div class="stat-value">{{ producto.stock_actual }}</div><div class="stat-label">Stock Actual</div></div>
+<div class="card-cn"><div class="card-header">REGISTRAR MOVIMIENTO</div>
+<div class="card-body">
+<form method="post">{% csrf_token %}
+{% for field in form %}<div class="mb-3"><label class="form-label">{{ field.label }}</label>{{ field }}</div>{% endfor %}
+<div class="d-flex gap-2"><button type="submit" class="btn-cn-primary">APLICAR</button><a href="{% url 'inventario:lista' %}" class="btn-cn-outline text-decoration-none">CANCELAR</a></div>
+</form></div></div>
+</div></div>
+{% endblock %}

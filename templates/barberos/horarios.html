@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Horarios - {{ barbero }}{% endblock %}
+{% block content %}
+<div class="page-header"><div class="page-title">HORARIOS</div><div class="page-subtitle">{{ barbero.usuario.get_full_name }}</div></div>
+<div class="row g-3">
+    <div class="col-md-7">
+        <div class="card-cn">
+            <div class="card-header"><i class="bi bi-clock me-2"></i>HORARIOS REGISTRADOS</div>
+            <div class="card-body p-0">
+                <table class="table-cn w-100">
+                    <thead><tr><th>Día</th><th>Inicio</th><th>Fin</th><th>Activo</th></tr></thead>
+                    <tbody>
+                    {% for h in horarios %}
+                    <tr>
+                        <td><strong>{{ h.get_dia_semana_display }}</strong></td>
+                        <td style="font-family:var(--cn-font-mono);color:var(--cn-accent)">{{ h.hora_inicio }}</td>
+                        <td style="font-family:var(--cn-font-mono)">{{ h.hora_fin }}</td>
+                        <td>{% if h.activo %}<span style="color:#5aad5a">✔ Sí</span>{% else %}<span style="color:#888">✖ No</span>{% endif %}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-center py-3" style="color:var(--cn-text-muted)">Sin horarios</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-5">
+        <div class="card-cn">
+            <div class="card-header"><i class="bi bi-plus-circle me-2"></i>AGREGAR HORARIO</div>
+            <div class="card-body">
+                <form method="post">{% csrf_token %}
+                    {% for field in form %}
+                    <div class="mb-2">
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="btn-cn-primary w-100 mt-2">GUARDAR HORARIO</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Servicios{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div><div class="page-title">SERVICIOS</div><div class="page-subtitle">Catálogo de servicios</div></div>
+    <a href="{% url 'servicios:nuevo' %}" class="btn-cn-primary text-decoration-none"><i class="bi bi-plus-circle me-1"></i>NUEVO</a>
+</div>
+<div class="row g-3">
+{% for s in servicios %}
+<div class="col-md-4 animate-fade">
+    <div class="card-cn">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h6 style="font-family:var(--cn-font-display);letter-spacing:2px;color:var(--cn-accent);font-size:1.1rem">{{ s.nombre|upper }}</h6>
+                    {% if s.categoria %}<span style="font-family:var(--cn-font-mono);font-size:0.7rem;color:var(--cn-text-muted)">{{ s.categoria.nombre }}</span>{% endif %}
+                </div>
+                <span style="font-family:var(--cn-font-display);font-size:1.5rem;color:var(--cn-accent)">Bs.{{ s.precio }}</span>
+            </div>
+            {% if s.descripcion %}<p style="font-size:0.85rem;color:var(--cn-text-muted);margin-top:0.5rem">{{ s.descripcion }}</p>{% endif %}
+            <div class="d-flex justify-content-between align-items-center mt-2">
+                <span style="font-family:var(--cn-font-mono);font-size:0.75rem;color:var(--cn-text-muted)"><i class="bi bi-clock me-1"></i>{{ s.duracion_minutos }} min</span>
+                <a href="{% url 'servicios:editar' s.pk %}" class="btn-cn-outline text-decoration-none" style="font-size:0.7rem;padding:0.2rem 0.6rem">EDITAR</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% empty %}
+<div class="col-12 text-center py-5" style="color:var(--cn-text-muted)"><div style="font-size:3rem;opacity:0.3">✂</div><p>Sin servicios</p></div>
+{% endfor %}
+</div>
+{% endblock %}

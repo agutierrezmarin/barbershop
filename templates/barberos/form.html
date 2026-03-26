@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+        <div class="page-title">{{ titulo|upper }}</div>
+        <div class="page-subtitle">☠ Datos de cuenta y perfil profesional</div>
+    </div>
+    <a href="{% url 'barberos:lista' %}" class="btn-cn-outline text-decoration-none">
+        <i class="bi bi-arrow-left me-1"></i>VOLVER
+    </a>
+</div>
+
+<div class="row justify-content-center">
+<div class="col-lg-8">
+<form method="post">
+    {% csrf_token %}
+
+    <!-- Sección: Cuenta de Usuario -->
+    <div class="card-cn mb-4">
+        <div class="card-header">
+            <i class="bi bi-person-circle me-2"></i>CUENTA DE USUARIO
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">{{ usuario_form.username.label }}</label>
+                    {{ usuario_form.username }}
+                    {% if usuario_form.username.errors %}
+                    <div style="color:#c05050;font-size:0.8rem;margin-top:4px">{{ usuario_form.username.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{{ usuario_form.email.label }}</label>
+                    {{ usuario_form.email }}
+                    {% if usuario_form.email.errors %}
+                    <div style="color:#c05050;font-size:0.8rem;margin-top:4px">{{ usuario_form.email.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{{ usuario_form.first_name.label }}</label>
+                    {{ usuario_form.first_name }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{{ usuario_form.last_name.label }}</label>
+                    {{ usuario_form.last_name }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{{ usuario_form.telefono.label }}</label>
+                    {{ usuario_form.telefono }}
+                </div>
+
+                {% if barbero %}
+                <!-- Editar: campo opcional de nueva contraseña -->
+                <div class="col-md-6">
+                    <label class="form-label">{{ usuario_form.nueva_password.label }}</label>
+                    {{ usuario_form.nueva_password }}
+                    {% if usuario_form.nueva_password.errors %}
+                    <div style="color:#c05050;font-size:0.8rem;margin-top:4px">{{ usuario_form.nueva_password.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <!-- Crear: contraseña requerida -->
+                <div class="col-md-6">
+                    <label class="form-label">{{ usuario_form.password.label }}</label>
+                    {{ usuario_form.password }}
+                    {% if usuario_form.password.errors %}
+                    <div style="color:#c05050;font-size:0.8rem;margin-top:4px">{{ usuario_form.password.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{{ usuario_form.confirmar_password.label }}</label>
+                    {{ usuario_form.confirmar_password }}
+                    {% if usuario_form.confirmar_password.errors %}
+                    <div style="color:#c05050;font-size:0.8rem;margin-top:4px">{{ usuario_form.confirmar_password.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección: Perfil profesional -->
+    <div class="card-cn mb-4">
+        <div class="card-header">
+            <i class="bi bi-scissors me-2"></i>PERFIL PROFESIONAL
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label class="form-label">{{ barbero_form.especialidad.label }}</label>
+                    {{ barbero_form.especialidad }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">{{ barbero_form.comision_porcentaje.label }}</label>
+                    <div class="input-group">
+                        {{ barbero_form.comision_porcentaje }}
+                        <span style="background:var(--cn-surface2);border:1px solid var(--cn-border);border-left:none;color:var(--cn-text-muted);padding:0.375rem 0.75rem;font-family:var(--cn-font-mono);font-size:0.85rem">%</span>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">{{ barbero_form.bio.label }}</label>
+                    {{ barbero_form.bio }}
+                </div>
+
+                <!-- Servicios -->
+                <div class="col-12">
+                    <label class="form-label">Servicios que realiza</label>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0.5rem;margin-top:0.25rem">
+                        {% for choice in barbero_form.servicios %}
+                        <label style="display:flex;align-items:center;gap:8px;padding:0.4rem 0.6rem;background:var(--cn-surface2);border:1px solid var(--cn-border);border-radius:2px;cursor:pointer;font-size:0.9rem;color:var(--cn-text)">
+                            {{ choice.tag }}
+                            {{ choice.choice_label }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Activo -->
+                <div class="col-12">
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+                        {{ barbero_form.activo }}
+                        <span style="font-family:var(--cn-font-mono);font-size:0.72rem;letter-spacing:2px;text-transform:uppercase;color:var(--cn-text-muted)">
+                            Barbero activo
+                        </span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Errores no asociados a campo -->
+    {% if usuario_form.non_field_errors or barbero_form.non_field_errors %}
+    <div class="alert-cn error mb-3">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        {{ usuario_form.non_field_errors }}{{ barbero_form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn-cn-primary">
+            <i class="bi bi-check-circle me-1"></i>
+            {% if barbero %}ACTUALIZAR{% else %}REGISTRAR BARBERO{% endif %}
+        </button>
+        <a href="{% url 'barberos:lista' %}" class="btn-cn-outline text-decoration-none">CANCELAR</a>
+    </div>
+</form>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Reporte Ingresos{% endblock %}
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div><div class="page-title">INGRESOS</div><div class="page-subtitle">Últimos {{ dias }} días</div></div>
+    <form method="get" class="d-flex gap-2 align-items-center">
+        <label class="form-label mb-0">Días:</label>
+        <select name="dias" class="form-select" style="width:auto" onchange="this.form.submit()">
+            <option value="7" {% if dias == 7 %}selected{% endif %}>7 días</option>
+            <option value="30" {% if dias == 30 %}selected{% endif %}>30 días</option>
+            <option value="90" {% if dias == 90 %}selected{% endif %}>90 días</option>
+        </select>
+    </form>
+</div>
+<div class="card-cn mb-4">
+    <div class="card-header"><i class="bi bi-bar-chart me-2"></i>INGRESOS DIARIOS</div>
+    <div class="card-body">
+        <canvas id="ingresosChart" height="100"></canvas>
+    </div>
+</div>
+<div class="card-cn">
+    <div class="card-header">DETALLE POR DÍA</div>
+    <div class="card-body p-0">
+        <table class="table-cn w-100">
+            <thead><tr><th>Fecha</th><th>Total</th></tr></thead>
+            <tbody>
+            {% for fecha, total in por_dia.items %}
+            <tr>
+                <td style="font-family:var(--cn-font-mono)">{{ fecha }}</td>
+                <td style="font-family:var(--cn-font-mono);color:var(--cn-accent)">Bs. {{ total|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="2" class="text-center py-3" style="color:var(--cn-text-muted)">Sin datos</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const labels = [{% for fecha in por_dia.keys %}"{{ fecha }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+const valores = [{% for total in por_dia.values %}{{ total|floatformat:2 }}{% if not forloop.last %},{% endif %}{% endfor %}];
+const ctx = document.getElementById('ingresosChart').getContext('2d');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels,
+        datasets: [{
+            label: 'Ingresos (Bs.)',
+            data: valores,
+            backgroundColor: 'rgba(200,169,81,0.6)',
+            borderColor: '#c8a951',
+            borderWidth: 1,
+            borderRadius: 2,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: '#e8e0d0' } } },
+        scales: {
+            x: { ticks: { color: '#7a7060' }, grid: { color: '#1a1a1a' } },
+            y: { ticks: { color: '#7a7060' }, grid: { color: '#1a1a1a' } }
+        }
+    }
+});
+</script>
+{% endblock %}

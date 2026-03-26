@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Reporte Clientes{% endblock %}
+{% block content %}
+<div class="page-header"><div class="page-title">CLIENTES FRECUENTES</div><div class="page-subtitle">Top 20 por visitas</div></div>
+<div class="card-cn">
+    <div class="card-body p-0">
+        <table class="table-cn w-100">
+            <thead><tr><th>#</th><th>Cliente</th><th>Teléfono</th><th>Total Citas</th><th>Acciones</th></tr></thead>
+            <tbody>
+            {% for c in clientes %}
+            <tr>
+                <td style="font-family:var(--cn-font-mono);color:var(--cn-text-muted)">{{ forloop.counter }}</td>
+                <td>
+                    <strong>{{ c.nombre }}</strong>
+                    {% if forloop.counter <= 3 %}<span class="estado-badge badge-confirmado ms-2" style="font-size:0.6rem">VIP</span>{% endif %}
+                </td>
+                <td style="font-family:var(--cn-font-mono)">{{ c.telefono }}</td>
+                <td style="font-family:var(--cn-font-mono);color:var(--cn-accent);font-size:1.1rem">{{ c.total_citas }}</td>
+                <td><a href="{% url 'clientes:detalle' c.pk %}" class="btn-cn-outline text-decoration-none" style="font-size:0.7rem;padding:0.2rem 0.5rem">VER FICHA</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center py-4" style="color:var(--cn-text-muted)">Sin datos</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

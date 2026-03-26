@@ -1,0 +1,649 @@
+{% extends "base.html" %}
+{% block title %}Nueva Venta{% endblock %}
+
+{% block extra_css %}
+<style>
+    .item-row { background: var(--cn-surface2); border: 1px solid var(--cn-border); border-radius: 2px; padding: 0.6rem 0.8rem; margin-bottom: 0.5rem; transition: border-color 0.2s; }
+    .item-row:hover { border-color: rgba(200,169,81,0.3); }
+    .item-type-badge { font-family: var(--cn-font-mono); font-size: 0.62rem; letter-spacing: 1px; padding: 2px 6px; border-radius: 2px; text-transform: uppercase; }
+    .item-type-servicio { background: rgba(200,169,81,0.15); color: var(--cn-accent); border: 1px solid rgba(200,169,81,0.3); }
+    .item-type-producto  { background: rgba(74,74,106,0.2); color: #9090c0; border: 1px solid rgba(74,74,106,0.4); }
+    .stock-low { color: #c05050 !important; }
+    .stock-ok  { color: #5aad5a !important; }
+    .btn-add-item { border: 1px dashed var(--cn-border); background: transparent; color: var(--cn-text-muted); font-family: var(--cn-font-body); font-weight: 600; font-size: 0.82rem; letter-spacing: 1px; text-transform: uppercase; padding: 0.5rem 1rem; border-radius: 2px; cursor: pointer; transition: all 0.2s; width: 100%; }
+    .btn-add-item:hover { border-color: var(--cn-accent); color: var(--cn-accent); }
+    .metodo-btn { flex: 1; background: var(--cn-surface2); border: 1px solid var(--cn-border); color: var(--cn-text-muted); font-family: var(--cn-font-body); font-weight: 600; font-size: 0.8rem; letter-spacing: 1px; text-transform: uppercase; padding: 0.6rem; border-radius: 2px; cursor: pointer; transition: all 0.2s; text-align: center; }
+    .metodo-btn.active { background: rgba(200,169,81,0.15); border-color: var(--cn-accent); color: var(--cn-accent); }
+    .cita-card { border: 1px solid var(--cn-border); border-radius: 2px; padding: 0.5rem 0.75rem; cursor: pointer; transition: all 0.2s; font-size: 0.85rem; margin-bottom: 0.3rem; }
+    .cita-card:hover, .cita-card.selected { border-color: var(--cn-accent); background: rgba(200,169,81,0.07); }
+    /* Cliente search */
+    .client-search-wrap { position: relative; }
+    #clientResults { position: absolute; top: 100%; left: 0; right: 0; background: var(--cn-surface2); border: 1px solid var(--cn-accent); border-top: none; z-index: 200; max-height: 200px; overflow-y: auto; border-radius: 0 0 2px 2px; }
+    .client-result { padding: 0.45rem 0.75rem; cursor: pointer; font-size: 0.88rem; border-bottom: 1px solid var(--cn-border); }
+    .client-result:hover { background: rgba(200,169,81,0.1); }
+    .client-result small { color: var(--cn-text-muted); font-family: var(--cn-font-mono); font-size: 0.72rem; }
+    #itemsEmpty { text-align: center; padding: 1.5rem; color: var(--cn-text-muted); font-family: var(--cn-font-mono); font-size: 0.75rem; letter-spacing: 2px; }
+    /* Barbero cards */
+    .barbero-opt { display: flex; align-items: center; gap: 8px; border: 1px solid var(--cn-border); border-radius: 2px; padding: 0.5rem 0.75rem; cursor: pointer; transition: all 0.2s; }
+    .barbero-opt:hover, .barbero-opt.selected { border-color: var(--cn-accent); background: rgba(200,169,81,0.07); }
+    .barbero-opt.selected { box-shadow: 0 0 0 1px var(--cn-accent); }
+    /* Barbero propio badge */
+    .barbero-propio-badge {
+        display: flex; align-items: center; gap: 10px;
+        background: rgba(200,169,81,0.08); border: 1px solid rgba(200,169,81,0.3);
+        border-radius: 2px; padding: 0.6rem 1rem;
+        font-family: var(--cn-font-body); font-size: 0.95rem; font-weight: 700;
+        color: var(--cn-accent);
+    }
+    .barbero-propio-badge i { font-size: 1.3rem; }
+    /* Paso label */
+    .paso-label {
+        font-family: var(--cn-font-mono); font-size: 0.62rem; letter-spacing: 3px;
+        color: var(--cn-text-muted); text-transform: uppercase; margin-bottom: 0.4rem;
+    }
+    .paso-num {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 20px; height: 20px; border-radius: 50%;
+        background: var(--cn-accent); color: #000;
+        font-weight: 700; font-size: 0.7rem; margin-right: 6px; flex-shrink: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+        <div class="page-title">NUEVA VENTA</div>
+        <div class="page-subtitle">☠ Registrar cobro de servicios y productos</div>
+    </div>
+    <a href="{% url 'ventas:lista' %}" class="btn-cn-outline text-decoration-none">
+        <i class="bi bi-arrow-left me-1"></i>VOLVER
+    </a>
+</div>
+
+{% if prefill_json != 'null' %}
+<div class="alert-cn success mb-3 animate-fade" style="display:flex;align-items:center;gap:10px">
+    <i class="bi bi-link-45deg" style="font-size:1.2rem;flex-shrink:0"></i>
+    <span>Registrando pago para la cita de <strong>{{ request.GET.cita }}</strong> — los datos han sido pre-llenados.</span>
+    <a href="{% url 'ventas:nueva' %}" style="margin-left:auto;font-family:var(--cn-font-mono);font-size:0.72rem;color:#6abf6a;text-decoration:none;white-space:nowrap">Venta libre →</a>
+</div>
+{% endif %}
+
+<form method="post" id="ventaForm" onsubmit="return validarForm()">
+{% csrf_token %}
+<input type="hidden" name="metodo_pago" id="metodoPagoHidden" value="efectivo">
+<input type="hidden" name="descuento"   id="descuentoHidden"  value="0">
+<input type="hidden" name="cita"        id="citaHidden"        value="">
+<input type="hidden" name="cliente"     id="clienteHidden"     value="">
+<input type="hidden" name="barbero"     id="barberoHidden"     value="{% if barbero_propio %}{{ barbero_propio.pk }}{% endif %}">
+
+<!-- ══ PASO 1+2: Cliente + Barbero ══════════════════════════════════════════ -->
+<div class="row g-3 mb-3">
+
+    <!-- CLIENTE (siempre visible, siempre primero) -->
+    <div class="col-12 {% if not barbero_propio %}col-lg-6{% endif %}">
+        <div class="card-cn h-100">
+            <div class="card-header">
+                <span class="paso-num">1</span>
+                <i class="bi bi-person me-1"></i>CLIENTE
+                <span style="opacity:0.5;font-size:0.72rem;font-family:var(--cn-font-mono);margin-left:6px">(opcional)</span>
+            </div>
+            <div class="card-body">
+                <div class="client-search-wrap">
+                    <input type="search" id="clienteInput" class="form-control"
+                           placeholder="Buscar por nombre o teléfono..."
+                           autocomplete="off" inputmode="text" enterkeyhint="search">
+                    <div id="clientResults"></div>
+                </div>
+                <div id="clienteSeleccionado"
+                     style="margin-top:6px;font-family:var(--cn-font-mono);font-size:0.78rem;color:var(--cn-accent)"></div>
+                <button type="button" id="btnQuitarCliente"
+                        class="btn-cn-outline mt-2" style="font-size:0.72rem;padding:0.2rem 0.7rem;display:none"
+                        onclick="quitarCliente()">
+                    <i class="bi bi-x me-1"></i>Quitar cliente
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- BARBERO (solo admin/recepcionista) -->
+    {% if not barbero_propio %}
+    <div class="col-12 col-lg-6">
+        <div class="card-cn h-100">
+            <div class="card-header">
+                <span class="paso-num">2</span>
+                <i class="bi bi-person-badge me-1"></i>BARBERO
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    {% for b in barberos %}
+                    <div class="col-12 col-sm-6">
+                        <div class="barbero-opt" data-id="{{ b.pk }}">
+                            <span style="font-size:1.3rem;flex-shrink:0">✂</span>
+                            <div>
+                                <div style="font-weight:700;font-size:0.9rem">{{ b.usuario.get_full_name|default:b.usuario.username }}</div>
+                                {% if b.especialidad %}
+                                <div style="font-size:0.7rem;color:var(--cn-text-muted)">{{ b.especialidad }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12" style="color:var(--cn-text-muted);font-size:0.85rem">
+                        No hay barberos activos.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Barbero propio (rol barbero) -->
+    <div class="col-12 col-lg-6" style="display:flex;align-items:stretch">
+        <div class="card-cn w-100">
+            <div class="card-header">
+                <span class="paso-num">2</span>
+                <i class="bi bi-person-badge me-1"></i>BARBERO
+            </div>
+            <div class="card-body d-flex align-items-center">
+                <div class="barbero-propio-badge w-100">
+                    <i class="bi bi-scissors"></i>
+                    <div>
+                        <div>{{ request.user.get_full_name|default:request.user.username }}</div>
+                        {% if barbero_propio.especialidad %}
+                        <div style="font-size:0.72rem;opacity:0.7;font-weight:400">{{ barbero_propio.especialidad }}</div>
+                        {% endif %}
+                    </div>
+                    <span style="margin-left:auto;font-size:0.68rem;font-weight:400;opacity:0.6">Tu venta</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ══ PASO 3+4: Ítems + Cobro ══════════════════════════════════════════════ -->
+<div class="row g-3">
+
+    <!-- ── Columna izquierda: ítems ─────────────────────────────────────── -->
+    <div class="col-lg-7">
+
+        <!-- Ítems -->
+        <div class="card-cn mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><span class="paso-num">3</span><i class="bi bi-cart me-1"></i>ÍTEMS DE LA VENTA</span>
+                <span id="itemCount" style="font-family:var(--cn-font-mono);font-size:0.7rem;color:var(--cn-text-muted)">0 ítems</span>
+            </div>
+            <div class="card-body">
+                <div id="itemsContainer">
+                    <div id="itemsEmpty">☠ &nbsp; SIN ÍTEMS — AÑADE UN SERVICIO O PRODUCTO</div>
+                </div>
+                <div class="row g-2 mt-3">
+                    <div class="col-6">
+                        <button type="button" class="btn-add-item" onclick="addItem('servicio')">
+                            <i class="bi bi-scissors me-1"></i>+ SERVICIO
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button type="button" class="btn-add-item" onclick="addItem('producto')">
+                            <i class="bi bi-box me-1"></i>+ PRODUCTO
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Totales -->
+        <div class="card-cn">
+            <div class="card-header"><i class="bi bi-calculator me-2"></i>TOTALES</div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2" style="font-size:0.95rem">
+                    <span style="color:var(--cn-text-muted)">Subtotal</span>
+                    <span style="font-family:var(--cn-font-mono)" id="subtotalDisplay">Bs. 0.00</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <label class="form-label mb-0">Descuento (Bs.)</label>
+                    <input type="number" id="descuentoVis" class="form-control" style="width:130px"
+                           value="0" step="0.01" min="0" inputmode="decimal" oninput="calcTotal()">
+                </div>
+                <div class="d-flex justify-content-between pt-2" style="border-top:1px solid var(--cn-border)">
+                    <strong style="font-family:var(--cn-font-display);font-size:1.1rem;letter-spacing:2px">TOTAL</strong>
+                    <strong style="font-family:var(--cn-font-display);font-size:1.8rem;color:var(--cn-accent)" id="totalDisplay">Bs. 0.00</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Columna derecha: cobro ────────────────────────────────────────── -->
+    <div class="col-lg-5">
+
+        <!-- Citas pendientes -->
+        <div class="card-cn mb-3" id="citasPendCard">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-calendar-check me-2"></i>VINCULAR CITA <span style="opacity:0.5;font-size:0.72rem">(opcional)</span></span>
+                <span id="citasCount" style="font-family:var(--cn-font-mono);font-size:0.68rem;color:var(--cn-text-muted)"></span>
+            </div>
+            <div class="card-body" id="citasList">
+                <div style="color:var(--cn-text-muted);font-size:0.82rem;font-family:var(--cn-font-mono)">Cargando citas...</div>
+            </div>
+        </div>
+
+        <!-- Método de pago -->
+        <div class="card-cn mb-3">
+            <div class="card-header"><span class="paso-num">4</span><i class="bi bi-cash me-1"></i>MÉTODO DE PAGO</div>
+            <div class="card-body">
+                <div class="d-flex gap-2">
+                    <div class="metodo-btn active" data-metodo="efectivo" onclick="setMetodo(this)">
+                        <i class="bi bi-cash-coin d-block mb-1" style="font-size:1.2rem"></i>Efectivo
+                    </div>
+                    <div class="metodo-btn" data-metodo="qr" onclick="setMetodo(this)">
+                        <i class="bi bi-qr-code d-block mb-1" style="font-size:1.2rem"></i>QR
+                    </div>
+                    <div class="metodo-btn" data-metodo="tarjeta" onclick="setMetodo(this)">
+                        <i class="bi bi-credit-card d-block mb-1" style="font-size:1.2rem"></i>Tarjeta
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Efectivo recibido -->
+        <div class="card-cn mb-3" id="efectivoCard">
+            <div class="card-header"><i class="bi bi-coin me-2"></i>EFECTIVO RECIBIDO</div>
+            <div class="card-body">
+                <input type="number" id="efectivoInput" class="form-control" placeholder="Bs. 0.00"
+                       step="0.5" min="0" inputmode="decimal" oninput="calcVuelto()">
+                <div class="d-flex justify-content-between mt-2"
+                     style="font-family:var(--cn-font-mono);font-size:0.85rem">
+                    <span style="color:var(--cn-text-muted)">Vuelto:</span>
+                    <span id="vueltoDisplay" style="color:var(--cn-accent)">Bs. 0.00</span>
+                </div>
+                <div class="d-flex gap-1 flex-wrap mt-2">
+                    <button type="button" class="btn-cn-outline" style="font-size:0.72rem;padding:0.2rem 0.5rem" onclick="document.getElementById('efectivoInput').value=20;calcVuelto()">Bs.20</button>
+                    <button type="button" class="btn-cn-outline" style="font-size:0.72rem;padding:0.2rem 0.5rem" onclick="document.getElementById('efectivoInput').value=50;calcVuelto()">Bs.50</button>
+                    <button type="button" class="btn-cn-outline" style="font-size:0.72rem;padding:0.2rem 0.5rem" onclick="document.getElementById('efectivoInput').value=100;calcVuelto()">Bs.100</button>
+                    <button type="button" class="btn-cn-outline" style="font-size:0.72rem;padding:0.2rem 0.5rem" onclick="document.getElementById('efectivoInput').value=200;calcVuelto()">Bs.200</button>
+                    <button type="button" class="btn-cn-outline" style="font-size:0.72rem;padding:0.2rem 0.5rem" onclick="redondearEfectivo()">Exacto</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notas -->
+        <div class="mb-3">
+            <label class="form-label">Notas (opcional)</label>
+            <textarea name="notas" class="form-control" rows="2"
+                      placeholder="Observaciones de la venta..."></textarea>
+        </div>
+
+        <!-- Botón registrar -->
+        <button type="submit" class="btn-cn-primary w-100"
+                style="font-size:1.1rem;padding:0.9rem;letter-spacing:3px">
+            <i class="bi bi-lightning-fill me-2"></i>REGISTRAR VENTA
+        </button>
+    </div>
+</div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Datos del servidor ────────────────────────────────────────────────────
+const SERVICIOS         = {{ servicios_json|safe }};
+const PRODUCTOS         = {{ productos_json|safe }};
+const PREFILL           = {{ prefill_json|safe }};
+const URL_CLIENTES      = "{% url 'citas:api_buscar_clientes' %}";
+const URL_EVENTOS       = "{% url 'citas:api_eventos' %}";
+const HOY               = "{{ hoy }}";
+const ES_BARBERO        = {{ request.user.es_barbero|yesno:"true,false" }};
+const BARBERO_PROPIO_ID = "{% if barbero_propio %}{{ barbero_propio.pk }}{% endif %}";
+
+// ── Estado ────────────────────────────────────────────────────────────────
+let selectedBarberoId  = BARBERO_PROPIO_ID || null;
+let selectedClienteId  = null;
+let selectedCitaId     = null;
+
+// ── Barbero (solo admin/recepcionista) ────────────────────────────────────
+document.querySelectorAll('.barbero-opt').forEach(card => {
+    card.addEventListener('click', () => {
+        document.querySelectorAll('.barbero-opt').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedBarberoId = card.dataset.id;
+        document.getElementById('barberoHidden').value = selectedBarberoId;
+        renderCitas(selectedBarberoId); // filtrar citas ya cargadas
+    });
+});
+
+// Auto-seleccionar si solo hay un barbero
+const barberoCards = document.querySelectorAll('.barbero-opt');
+if (barberoCards.length === 1) barberoCards[0].click();
+
+// ── Citas pendientes ───────────────────────────────────────────────────────
+let todasLasCitas = [];  // caché de eventos del día
+
+async function cargarTodasCitas() {
+    const box = document.getElementById('citasList');
+    box.innerHTML = '<div style="color:var(--cn-text-muted);font-size:0.82rem;font-family:var(--cn-font-mono)">Cargando...</div>';
+    try {
+        const r = await fetch(`${URL_EVENTOS}?start=${HOY}&end=${HOY}`);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        todasLasCitas = await r.json();
+        renderCitas(selectedBarberoId);
+    } catch(err) {
+        box.innerHTML = `<div style="color:#c05050;font-size:0.82rem;font-family:var(--cn-font-mono)">
+            Error al cargar citas: ${err.message}</div>`;
+        console.error('cargarTodasCitas:', err);
+    }
+    // siempre resuelve para que .then() funcione aunque haya error
+    return Promise.resolve();
+}
+
+function renderCitas(barberoId) {
+    const box = document.getElementById('citasList');
+    const countEl = document.getElementById('citasCount');
+
+    // Filtrar por estado primero
+    let citas = todasLasCitas.filter(e =>
+        e.extendedProps && ['pendiente','confirmado'].includes(e.extendedProps.estado)
+    );
+
+    // Si hay barbero seleccionado, filtrar por él
+    if (barberoId) {
+        citas = citas.filter(e => String(e.resourceId) === String(barberoId));
+    }
+
+    if (countEl) countEl.textContent = citas.length ? `${citas.length} cita${citas.length !== 1 ? 's' : ''}` : '';
+
+    if (!citas.length) {
+        const msg = barberoId
+            ? 'Sin citas activas para este barbero hoy'
+            : 'Sin citas activas hoy';
+        box.innerHTML = `<div style="color:var(--cn-text-muted);font-size:0.82rem;font-family:var(--cn-font-mono)">${msg}</div>`;
+        return;
+    }
+
+    box.innerHTML = citas.map(e => {
+        const hora = e.start
+            ? new Date(e.start).toLocaleTimeString('es-BO', {hour:'2-digit', minute:'2-digit'})
+            : '';
+        const barberoNombre = e.extendedProps.barbero_nombre || '';
+        return `
+        <div class="cita-card" data-citaid="${e.id}"
+             data-clienteid="${e.extendedProps.cliente_id}"
+             data-clientenombre="${e.extendedProps.cliente_nombre}"
+             onclick="vincularCita(this)">
+            <div class="d-flex justify-content-between align-items-start">
+                <div style="font-weight:700;font-size:0.9rem">${e.extendedProps.cliente_nombre}</div>
+                <span style="font-family:var(--cn-font-mono);font-size:0.72rem;color:var(--cn-accent)">${hora}</span>
+            </div>
+            <div style="font-size:0.75rem;color:var(--cn-text-muted);font-family:var(--cn-font-mono)">
+                ${e.extendedProps.servicio_nombre}${barberoNombre && !barberoId ? ' · ' + barberoNombre : ''}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function vincularCita(card) {
+    document.querySelectorAll('#citasList .cita-card').forEach(c => c.classList.remove('selected'));
+    if (selectedCitaId === card.dataset.citaid) {
+        // desvincular
+        selectedCitaId = null;
+        document.getElementById('citaHidden').value = '';
+    } else {
+        card.classList.add('selected');
+        selectedCitaId = card.dataset.citaid;
+        document.getElementById('citaHidden').value = selectedCitaId;
+        seleccionarCliente(card.dataset.clienteid, card.dataset.clientenombre, '');
+    }
+}
+
+// Cargar citas al abrir la página y luego aplicar pre-llenado
+cargarTodasCitas().then(() => {
+    if (PREFILL) aplicarPrefill();
+});
+
+// ── Pre-llenado desde cita ────────────────────────────────────────────────
+function aplicarPrefill() {
+    if (!PREFILL) return;
+
+    // 1. Cliente
+    seleccionarCliente(PREFILL.cliente_id, PREFILL.cliente_nombre, PREFILL.cliente_telefono);
+
+    // 2. Barbero (solo admin/recepcionista — el barbero ya está fijo)
+    if (!ES_BARBERO && PREFILL.barbero_id) {
+        const barberoCard = document.querySelector(`.barbero-opt[data-id="${PREFILL.barbero_id}"]`);
+        if (barberoCard) {
+            barberoCard.click();  // dispara selección + carga de citas del barbero
+        } else {
+            // barbero no está en las cards (inactivo?) — asignar igual en hidden
+            selectedBarberoId = String(PREFILL.barbero_id);
+            document.getElementById('barberoHidden').value = selectedBarberoId;
+            renderCitas(selectedBarberoId);
+        }
+    }
+
+    // 3. Vincular la cita (marcar hidden + resaltar card en la lista)
+    selectedCitaId = String(PREFILL.cita_id);
+    document.getElementById('citaHidden').value = selectedCitaId;
+
+    // 4. Servicio como ítem inicial
+    if (PREFILL.servicio_id) {
+        addItem('servicio');
+        const filas = document.querySelectorAll('.item-row');
+        const ultima = filas[filas.length - 1];
+        if (ultima) {
+            const sel = ultima.querySelector('[name="item_id"]');
+            if (sel) {
+                sel.value = String(PREFILL.servicio_id);
+                onItemSelect(sel);
+            }
+        }
+    }
+}
+
+// Marcar cita pre-seleccionada después de renderizar
+const _renderCitasOrig = renderCitas;
+renderCitas = function(barberoId) {
+    _renderCitasOrig(barberoId);
+    if (selectedCitaId) {
+        const card = document.querySelector(`#citasList .cita-card[data-citaid="${selectedCitaId}"]`);
+        if (card) card.classList.add('selected');
+    }
+};
+
+// ── Cliente autocomplete ──────────────────────────────────────────────────
+let clienteTimer;
+document.getElementById('clienteInput').addEventListener('input', function () {
+    clearTimeout(clienteTimer);
+    const q = this.value.trim();
+    if (q.length < 2) { document.getElementById('clientResults').innerHTML = ''; return; }
+    clienteTimer = setTimeout(async () => {
+        const data = await fetch(`${URL_CLIENTES}?q=${encodeURIComponent(q)}`).then(r => r.json());
+        const box  = document.getElementById('clientResults');
+        if (!data.length) {
+            box.innerHTML = '<div class="client-result" style="color:var(--cn-text-muted)">Sin resultados</div>';
+            return;
+        }
+        box.innerHTML = data.map(c =>
+            `<div class="client-result" data-id="${c.id}" data-nombre="${c.nombre}" data-tel="${c.telefono}">
+                ${c.nombre} <small>${c.telefono}</small>
+             </div>`
+        ).join('');
+        box.querySelectorAll('[data-id]').forEach(el =>
+            el.addEventListener('click', () =>
+                seleccionarCliente(el.dataset.id, el.dataset.nombre, el.dataset.tel))
+        );
+    }, 280);
+});
+
+function seleccionarCliente(id, nombre, telefono) {
+    selectedClienteId = id;
+    document.getElementById('clienteHidden').value = id;
+    document.getElementById('clienteInput').value  = nombre;
+    document.getElementById('clienteSeleccionado').textContent =
+        `✔ ${nombre}${telefono ? ' · ' + telefono : ''}`;
+    document.getElementById('btnQuitarCliente').style.display = '';
+    document.getElementById('clientResults').innerHTML = '';
+}
+
+function quitarCliente() {
+    selectedClienteId = null;
+    document.getElementById('clienteHidden').value   = '';
+    document.getElementById('clienteInput').value    = '';
+    document.getElementById('clienteSeleccionado').textContent = '';
+    document.getElementById('btnQuitarCliente').style.display  = 'none';
+}
+
+document.addEventListener('click', e => {
+    if (!e.target.closest('.client-search-wrap'))
+        document.getElementById('clientResults').innerHTML = '';
+});
+
+// ── Método de pago ────────────────────────────────────────────────────────
+function setMetodo(btn) {
+    document.querySelectorAll('.metodo-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const metodo = btn.dataset.metodo;
+    document.getElementById('metodoPagoHidden').value = metodo;
+    document.getElementById('efectivoCard').style.display = metodo === 'efectivo' ? '' : 'none';
+}
+
+// ── Ítems ─────────────────────────────────────────────────────────────────
+function addItem(tipo) {
+    const list  = tipo === 'servicio' ? SERVICIOS : PRODUCTOS;
+    const empty = document.getElementById('itemsEmpty');
+    if (empty) empty.remove();
+
+    const container = document.getElementById('itemsContainer');
+    const row = document.createElement('div');
+    row.className = 'item-row animate-fade';
+    row.dataset.tipo = tipo;
+
+    const options = list.map(i => {
+        const extra = tipo === 'producto'
+            ? ` (Stock: ${i.stock})`
+            : ` (${i.duracion}min)`;
+        return `<option value="${i.id}" data-precio="${i.precio}" data-stock="${i.stock || 0}"
+                        data-nombre="${i.nombre.replace(/"/g,'&quot;')}">${i.nombre}${extra}</option>`;
+    }).join('');
+
+    row.innerHTML = `
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="item-type-badge item-type-${tipo}">${tipo === 'servicio' ? '✂ Servicio' : '📦 Producto'}</span>
+            <button type="button" class="ms-auto"
+                    style="background:none;border:none;color:#c05050;cursor:pointer;font-size:1rem;padding:0"
+                    onclick="removeItem(this)"><i class="bi bi-x-circle"></i></button>
+        </div>
+        <input type="hidden" name="item_tipo" value="${tipo}">
+        <input type="hidden" name="item_desc" class="item-desc-hidden" value="">
+        <div class="row g-2 align-items-end">
+            <div class="col-12 col-sm-5">
+                <label class="form-label">Ítem</label>
+                <select name="item_id" class="form-select form-select-sm" onchange="onItemSelect(this)">
+                    <option value="">Seleccionar...</option>
+                    ${options}
+                </select>
+                ${tipo === 'producto' ? `<div class="item-stock-info" style="font-family:var(--cn-font-mono);font-size:0.7rem;margin-top:3px"></div>` : ''}
+            </div>
+            <div class="col-6 col-sm-3">
+                <label class="form-label">Cantidad</label>
+                <input type="number" name="item_cantidad" class="form-control form-control-sm"
+                       value="1" min="1" oninput="calcTotal()">
+            </div>
+            <div class="col-6 col-sm-4">
+                <label class="form-label">Precio (Bs.)</label>
+                <input type="number" name="item_precio" class="form-control form-control-sm item-precio"
+                       step="0.01" placeholder="0.00" oninput="calcTotal()">
+            </div>
+        </div>
+        <div class="d-flex justify-content-end mt-1"
+             style="font-family:var(--cn-font-mono);font-size:0.75rem;color:var(--cn-text-muted)">
+            Subtotal: <span class="item-subtotal ms-1">Bs. 0.00</span>
+        </div>`;
+    container.appendChild(row);
+    actualizarContador();
+}
+
+function removeItem(btn) {
+    btn.closest('.item-row').remove();
+    actualizarContador();
+    calcTotal();
+    if (!document.querySelectorAll('.item-row').length) {
+        document.getElementById('itemsContainer').innerHTML =
+            '<div id="itemsEmpty">☠ &nbsp; SIN ÍTEMS — AÑADE UN SERVICIO O PRODUCTO</div>';
+    }
+}
+
+function onItemSelect(sel) {
+    const opt  = sel.options[sel.selectedIndex];
+    const row  = sel.closest('.item-row');
+    if (!opt.value) return;
+    const precioInput = row.querySelector('.item-precio');
+    const descInput   = row.querySelector('.item-desc-hidden');
+    if (precioInput) precioInput.value = opt.dataset.precio;
+    if (descInput)   descInput.value   = opt.dataset.nombre || opt.text;
+    const stockInfo = row.querySelector('.item-stock-info');
+    if (stockInfo) {
+        const stock = parseInt(opt.dataset.stock || 0);
+        stockInfo.innerHTML = `Stock: <strong class="${stock <= 3 ? 'stock-low' : 'stock-ok'}">${stock}</strong>`;
+    }
+    calcTotal();
+}
+
+function actualizarContador() {
+    const n = document.querySelectorAll('.item-row').length;
+    document.getElementById('itemCount').textContent = `${n} ítem${n !== 1 ? 's' : ''}`;
+}
+
+// ── Cálculos ──────────────────────────────────────────────────────────────
+function calcTotal() {
+    let subtotal = 0;
+    document.querySelectorAll('.item-row').forEach(row => {
+        const precio = parseFloat(row.querySelector('[name="item_precio"]')?.value || 0);
+        const qty    = parseInt(row.querySelector('[name="item_cantidad"]')?.value || 1);
+        const sub    = precio * qty;
+        const span   = row.querySelector('.item-subtotal');
+        if (span) span.textContent = `Bs. ${sub.toFixed(2)}`;
+        subtotal += sub;
+    });
+    const desc = parseFloat(document.getElementById('descuentoVis')?.value || 0);
+    document.getElementById('descuentoHidden').value = desc;
+    document.getElementById('subtotalDisplay').textContent = `Bs. ${subtotal.toFixed(2)}`;
+    const total = Math.max(0, subtotal - desc);
+    document.getElementById('totalDisplay').textContent = `Bs. ${total.toFixed(2)}`;
+    calcVuelto();
+}
+
+function calcVuelto() {
+    const total    = parseFloat(document.getElementById('totalDisplay').textContent.replace('Bs. ','')) || 0;
+    const recibido = parseFloat(document.getElementById('efectivoInput')?.value || 0);
+    const vuelto   = Math.max(0, recibido - total);
+    const el = document.getElementById('vueltoDisplay');
+    el.textContent = `Bs. ${vuelto.toFixed(2)}`;
+    el.style.color  = vuelto < 0 ? '#c05050' : 'var(--cn-accent)';
+}
+
+function redondearEfectivo() {
+    document.getElementById('efectivoInput').value =
+        parseFloat(document.getElementById('totalDisplay').textContent.replace('Bs. ','')).toFixed(2);
+    calcVuelto();
+}
+
+// ── Validación ────────────────────────────────────────────────────────────
+function validarForm() {
+    if (!selectedBarberoId) {
+        alert('Selecciona un barbero para continuar.');
+        return false;
+    }
+    if (!document.querySelectorAll('.item-row').length) {
+        alert('Agrega al menos un servicio o producto a la venta.');
+        return false;
+    }
+    let ok = true;
+    document.querySelectorAll('.item-row').forEach(row => {
+        const sel = row.querySelector('[name="item_id"]');
+        if (sel && !sel.value) { sel.style.borderColor = '#c05050'; ok = false; }
+    });
+    if (!ok) { alert('Selecciona el ítem en todas las filas o elimina las vacías.'); return false; }
+    return true;
+}
+</script>
+{% endblock %}

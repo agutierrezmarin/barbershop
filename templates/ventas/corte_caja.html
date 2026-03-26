@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}Corte de Caja{% endblock %}
+
+{% block extra_css %}
+<style>
+    .periodo-btn { background: var(--cn-surface2); border: 1px solid var(--cn-border); color: var(--cn-text-muted);
+        font-family: var(--cn-font-body); font-weight: 600; font-size: 0.78rem; letter-spacing: 1px;
+        text-transform: uppercase; padding: 0.45rem 1rem; border-radius: 2px; cursor: pointer;
+        text-decoration: none; transition: all 0.2s; }
+    .periodo-btn.active, .periodo-btn:hover { border-color: var(--cn-accent); color: var(--cn-accent);
+        background: rgba(200,169,81,0.08); }
+    .barbero-row td:last-child { font-family: var(--cn-font-mono); color: var(--cn-accent); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+        <div class="page-title">CORTE DE CAJA</div>
+        <div class="page-subtitle">{{ titulo }}</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+        {% if periodo == 'dia' and not corte %}
+        <form method="post" action="{% url 'ventas:realizar_corte' %}">{% csrf_token %}
+            <button type="submit" class="btn-cn-primary"><i class="bi bi-safe2 me-1"></i>REALIZAR CORTE</button>
+        </form>
+        {% elif periodo == 'dia' and corte %}
+        <span class="estado-badge badge-atendido">CORTE REALIZADO</span>
+        {% endif %}
+        <a href="{% url 'ventas:exportar_excel' %}?periodo={{ periodo }}" class="btn-cn-outline text-decoration-none">
+            <i class="bi bi-file-earmark-excel me-1"></i>EXPORTAR EXCEL
+        </a>
+    </div>
+</div>
+
+<!-- Selector de período -->
+<div class="d-flex gap-2 mb-4">
+    <a href="?periodo=dia"  class="periodo-btn {% if periodo == 'dia' %}active{% endif %}"><i class="bi bi-calendar-day me-1"></i>Hoy</a>
+    <a href="?periodo=mes"  class="periodo-btn {% if periodo == 'mes' %}active{% endif %}"><i class="bi bi-calendar-month me-1"></i>Este mes</a>
+    <a href="?periodo=anio" class="periodo-btn {% if periodo == 'anio' %}active{% endif %}"><i class="bi bi-calendar3 me-1"></i>Este año</a>
+</div>
+
+<!-- Tarjetas resumen -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card gold">
+            <div class="stat-value">Bs.{{ resumen.efectivo }}</div>
+            <div class="stat-label">Efectivo</div>
+            <div class="stat-icon"><i class="bi bi-cash"></i></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card purple">
+            <div class="stat-value">Bs.{{ resumen.qr }}</div>
+            <div class="stat-label">QR / Transfer</div>
+            <div class="stat-icon"><i class="bi bi-qr-code"></i></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card red">
+            <div class="stat-value">Bs.{{ resumen.tarjeta }}</div>
+            <div class="stat-label">Tarjeta</div>
+            <div class="stat-icon"><i class="bi bi-credit-card"></i></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card green">
+            <div class="stat-value">Bs.{{ resumen.total }}</div>
+            <div class="stat-label">TOTAL — {{ resumen.cantidad }} venta{{ resumen.cantidad|pluralize:"s" }}</div>
+            <div class="stat-icon"><i class="bi bi-trophy"></i></div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Ventas -->
+    <div class="col-lg-8">
+        <div class="card-cn">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-list-ul me-2"></i>VENTAS DEL PERÍODO</span>
+                <span style="font-family:var(--cn-font-mono);font-size:0.72rem;color:var(--cn-text-muted)">{{ resumen.cantidad }} registro{{ resumen.cantidad|pluralize:"s" }}</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table-cn w-100">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Fecha</th>
+                                <th class="col-hide-sm">Cliente</th>
+                                <th class="col-hide-sm">Barbero</th>
+                                <th>Método</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for v in ventas %}
+                        <tr>
+                            <td style="font-family:var(--cn-font-mono);color:var(--cn-text-muted)">
+                                <a href="{% url 'ventas:detalle' v.pk %}" style="color:inherit;text-decoration:none">#{{ v.pk }}</a>
+                            </td>
+                            <td style="font-family:var(--cn-font-mono);font-size:0.82rem">
+                                {% if periodo == 'dia' %}{{ v.fecha|date:"H:i" }}
+                                {% else %}{{ v.fecha|date:"d/m/Y H:i" }}{% endif %}
+                            </td>
+                            <td class="col-hide-sm">{{ v.cliente.nombre|default:"—" }}</td>
+                            <td class="col-hide-sm">{{ v.barbero.usuario.get_full_name|default:"—" }}</td>
+                            <td>
+                                <span class="estado-badge {% if v.metodo_pago == 'efectivo' %}badge-pendiente{% elif v.metodo_pago == 'qr' %}badge-confirmado{% else %}badge-atendido{% endif %}">
+                                    {{ v.get_metodo_pago_display }}
+                                </span>
+                            </td>
+                            <td style="font-family:var(--cn-font-mono);color:var(--cn-accent)">Bs.{{ v.total }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-center py-4" style="color:var(--cn-text-muted)">Sin ventas en este período</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel lateral -->
+    <div class="col-lg-4">
+        <!-- Por barbero -->
+        <div class="card-cn mb-3">
+            <div class="card-header"><i class="bi bi-person-badge me-2"></i>POR BARBERO</div>
+            <div class="card-body p-0">
+                <table class="table-cn w-100">
+                    <thead><tr><th>Barbero</th><th>Vtas.</th><th>Total</th></tr></thead>
+                    <tbody>
+                    {% for b in por_barbero %}
+                    <tr class="barbero-row">
+                        <td>
+                            {% if b.barbero__usuario__first_name %}
+                                {{ b.barbero__usuario__first_name }} {{ b.barbero__usuario__last_name }}
+                            {% else %}
+                                {{ b.barbero__usuario__username|default:"—" }}
+                            {% endif %}
+                        </td>
+                        <td style="font-family:var(--cn-font-mono);text-align:center">{{ b.cantidad }}</td>
+                        <td>Bs.{{ b.total }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" class="text-center py-3" style="color:var(--cn-text-muted)">—</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Descarga -->
+        <div class="card-cn">
+            <div class="card-header"><i class="bi bi-download me-2"></i>DESCARGAR REPORTE</div>
+            <div class="card-body d-flex flex-column gap-2">
+                <a href="{% url 'ventas:exportar_excel' %}?periodo=dia"
+                   class="btn-cn-outline text-decoration-none text-center">
+                    <i class="bi bi-file-earmark-excel me-1"></i>Excel — Hoy
+                </a>
+                <a href="{% url 'ventas:exportar_excel' %}?periodo=mes"
+                   class="btn-cn-outline text-decoration-none text-center">
+                    <i class="bi bi-file-earmark-excel me-1"></i>Excel — Este mes
+                </a>
+                <a href="{% url 'ventas:exportar_excel' %}?periodo=anio"
+                   class="btn-cn-outline text-decoration-none text-center">
+                    <i class="bi bi-file-earmark-excel me-1"></i>Excel — Este año
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

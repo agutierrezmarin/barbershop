@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Citas{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+        <div class="page-title">CITAS</div>
+        <div class="page-subtitle">Gestión y control de agenda</div>
+    </div>
+    <a href="{% url 'citas:nueva' %}" class="btn-cn-primary text-decoration-none"><i class="bi bi-plus-circle me-1"></i>NUEVA CITA</a>
+</div>
+
+<!-- Filtros -->
+<div class="card-cn mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Fecha</label>
+                <input type="date" name="fecha" class="form-control" value="{{ request.GET.fecha }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Barbero</label>
+                <select name="barbero" class="form-select">
+                    <option value="">Todos</option>
+                    {% for b in barberos %}
+                    <option value="{{ b.pk }}" {% if request.GET.barbero == b.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ b.usuario.get_full_name|default:b.usuario.username }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Estado</label>
+                <select name="estado" class="form-select">
+                    <option value="">Todos</option>
+                    {% for val,label in estados %}
+                    <option value="{{ val }}" {% if request.GET.estado == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn-cn-primary w-100"><i class="bi bi-funnel me-1"></i>FILTRAR</button>
+            </div>
+            <div class="col-md-2">
+                <a href="{% url 'citas:lista' %}" class="btn-cn-outline w-100 text-decoration-none text-center d-block">LIMPIAR</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card-cn">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table-cn w-100">
+                <thead><tr>
+                    <th class="col-hide-sm">ID</th><th>Fecha/Hora</th><th>Cliente</th><th class="col-hide-sm">Barbero</th><th class="col-hide-sm">Servicio</th><th>Estado</th><th>Acciones</th>
+                </tr></thead>
+                <tbody>
+                {% for cita in citas %}
+                <tr>
+                    <td class="col-hide-sm" style="font-family:var(--cn-font-mono);color:var(--cn-text-muted)">#{{ cita.pk }}</td>
+                    <td>
+                        <span style="font-family:var(--cn-font-mono);color:var(--cn-accent)">{{ cita.fecha_hora|date:"d/m/Y" }}</span><br>
+                        <span style="font-family:var(--cn-font-mono);font-size:0.8rem">{{ cita.fecha_hora|date:"H:i" }}</span>
+                    </td>
+                    <td>
+                        <strong>{{ cita.cliente.nombre }}</strong><br>
+                        <small style="color:var(--cn-text-muted)">{{ cita.cliente.telefono }}</small>
+                    </td>
+                    <td class="col-hide-sm">{{ cita.barbero.usuario.get_full_name|default:cita.barbero.usuario.username }}</td>
+                    <td class="col-hide-sm">
+                        {{ cita.servicio.nombre|default:"—" }}
+                        {% if cita.servicio %}<br><small style="font-family:var(--cn-font-mono);color:var(--cn-text-muted)">Bs. {{ cita.servicio.precio }}</small>{% endif %}
+                    </td>
+                    <td>
+                        <span class="estado-badge badge-{{ cita.estado }}">{{ cita.get_estado_display }}</span>
+                        {% if cita.venta %}<br><small style="font-family:var(--cn-font-mono);font-size:0.62rem;color:#6abf6a">✔ Cobrado</small>{% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1 flex-wrap">
+                            <a href="{% url 'citas:detalle' cita.pk %}"
+                               class="btn-cn-outline" style="font-size:0.7rem;padding:0.25rem 0.5rem"
+                               title="Ver detalle"><i class="bi bi-eye"></i></a>
+                            <a href="{% url 'citas:editar' cita.pk %}"
+                               class="btn-cn-outline" style="font-size:0.7rem;padding:0.25rem 0.5rem"
+                               title="Editar"><i class="bi bi-pencil"></i></a>
+                            {% if cita.estado == 'pendiente' or cita.estado == 'confirmado' %}{% if not cita.venta %}
+                            <a href="{% url 'ventas:nueva' %}?cita={{ cita.pk }}"
+                               class="btn-cn-primary" style="font-size:0.7rem;padding:0.25rem 0.6rem;white-space:nowrap"
+                               title="Registrar cobro">
+                                <i class="bi bi-cash-coin me-1"></i>Cobrar
+                            </a>
+                            {% endif %}{% elif cita.venta %}
+                            <a href="{% url 'ventas:detalle' cita.venta.pk %}"
+                               class="btn-cn-outline" style="font-size:0.7rem;padding:0.25rem 0.5rem;border-color:#2d6a2d;color:#5aad5a"
+                               title="Ver venta #{{ cita.venta.pk }}">
+                                <i class="bi bi-receipt me-1"></i>Venta
+                            </a>
+                            {% endif %}
+                            <form method="post" action="{% url 'citas:cambiar_estado' cita.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <select name="estado" onchange="this.form.submit()"
+                                        style="font-family:var(--cn-font-mono);font-size:0.68rem;background:#1a1a1a;border:1px solid #333;color:#888;padding:2px 4px;border-radius:2px">
+                                    {% for val,label in estados %}
+                                    <option value="{{ val }}" {% if cita.estado == val %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center py-4" style="color:var(--cn-text-muted)">☠ Sin citas encontradas</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
