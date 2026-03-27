@@ -1,99 +1,104 @@
 {% extends "base.html" %}
-{% block title %}Dashboard{% endblock %}
+{% block title %}{% if request.user.es_barbero %}Mi Panel{% else %}Dashboard{% endif %}{% endblock %}
 {% block content %}
-<div class="page-header d-flex justify-content-between align-items-start">
+
+{% if request.user.es_barbero %}
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
     <div>
-        {% if barbero_actual %}
         <div class="page-title">MI PANEL</div>
         <div class="page-subtitle">☠ {{ request.user.get_full_name|default:request.user.username }} — {{ request.user.get_rol_display }}</div>
-        {% else %}
-        <div class="page-title">DASHBOARD</div>
-        <div class="page-subtitle">☠ Resumen operativo del día</div>
-        {% endif %}
     </div>
     <a href="{% url 'citas:nueva' %}" class="btn-cn-primary text-decoration-none">
         <i class="bi bi-plus-circle me-1"></i>NUEVA CITA
     </a>
 </div>
 
-<!-- Stats -->
-<div class="row g-3 mb-4">
-    <div class="col-6 col-md-3 animate-fade">
+<!-- Barbero: HOY -->
+<div style="font-family:var(--cn-font-mono);font-size:0.65rem;letter-spacing:3px;color:var(--cn-text-muted);margin-bottom:0.5rem">HOY — {{ hoy|date:"d/m/Y" }}</div>
+<div class="row g-3 mb-3">
+    <div class="col-6 col-sm-3">
         <div class="stat-card gold">
             <div class="stat-icon"><i class="bi bi-scissors"></i></div>
             <div class="stat-value">{{ total_citas }}</div>
             <div class="stat-label">Citas Hoy</div>
         </div>
     </div>
-    <div class="col-6 col-md-3 animate-fade animate-delay-1">
+    <div class="col-6 col-sm-3">
         <div class="stat-card green">
             <div class="stat-icon"><i class="bi bi-check2-circle"></i></div>
             <div class="stat-value">{{ citas_atendidas }}</div>
             <div class="stat-label">Atendidas</div>
         </div>
     </div>
-    <div class="col-6 col-md-3 animate-fade animate-delay-2">
-        <div class="stat-card red">
-            <div class="stat-icon"><i class="bi bi-cash-coin"></i></div>
-            <div class="stat-value" style="font-size:1.8rem">Bs.{{ ingresos_hoy }}</div>
-            <div class="stat-label">{% if barbero_actual %}Mis Ingresos Hoy{% else %}Ingresos Hoy{% endif %}</div>
-        </div>
-    </div>
-    <div class="col-6 col-md-3 animate-fade animate-delay-3">
-        {% if barbero_actual %}
-        <div class="stat-card purple">
-            <div class="stat-icon"><i class="bi bi-clock"></i></div>
-            <div class="stat-value">{{ citas_pendientes }}</div>
+    <div class="col-6 col-sm-3">
+        <div class="stat-card" style="border-color:var(--cn-border)">
+            <div class="stat-icon" style="color:var(--cn-accent)"><i class="bi bi-clock-history"></i></div>
+            <div class="stat-value" style="color:var(--cn-accent)">{{ citas_pendientes }}</div>
             <div class="stat-label">Pendientes</div>
         </div>
-        {% else %}
-        <div class="stat-card purple">
-            <div class="stat-icon"><i class="bi bi-people"></i></div>
-            <div class="stat-value">{{ clientes_total }}</div>
-            <div class="stat-label">Clientes Activos</div>
+    </div>
+    <div class="col-6 col-sm-3">
+        <div class="stat-card red">
+            <div class="stat-icon"><i class="bi bi-cash-coin"></i></div>
+            <div class="stat-value" style="font-size:1.4rem">Bs.{{ ingresos_hoy|floatformat:0 }}</div>
+            <div class="stat-label">Ingresos Hoy</div>
         </div>
-        {% endif %}
     </div>
 </div>
 
-{% if productos_bajo_stock %}
-<div class="alert-cn error mb-4 animate-fade">
-    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-    <strong>Alerta Stock:</strong> {{ productos_bajo_stock }} producto(s) con stock bajo.
-    <a href="{% url 'inventario:alertas' %}" style="color:var(--cn-accent); text-decoration:none; margin-left:8px; font-weight:700;">Ver alertas →</a>
+<!-- Barbero: ESTE MES -->
+<div style="font-family:var(--cn-font-mono);font-size:0.65rem;letter-spacing:3px;color:var(--cn-text-muted);margin-bottom:0.5rem">ESTE MES</div>
+<div class="row g-3 mb-4">
+    <div class="col-6">
+        <div class="stat-card" style="border-color:rgba(200,169,81,0.3)">
+            <div class="stat-icon" style="color:var(--cn-accent)"><i class="bi bi-calendar-month"></i></div>
+            <div class="stat-value" style="color:var(--cn-accent)">{{ citas_mes }}</div>
+            <div class="stat-label">Citas del Mes</div>
+        </div>
+    </div>
+    <div class="col-6">
+        <div class="stat-card" style="border-color:rgba(200,169,81,0.3)">
+            <div class="stat-icon" style="color:var(--cn-accent)"><i class="bi bi-cash-stack"></i></div>
+            <div class="stat-value" style="font-size:1.4rem;color:var(--cn-accent)">Bs.{{ ingresos_mes|floatformat:0 }}</div>
+            <div class="stat-label">Ingresos del Mes</div>
+        </div>
+    </div>
 </div>
-{% endif %}
 
-<!-- Citas del día -->
-<div class="card-cn animate-fade">
+<!-- Barbero: Citas de hoy -->
+<div class="card-cn">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-calendar-day me-2"></i>{% if barbero_actual %}MIS CITAS DE HOY{% else %}CITAS DE HOY{% endif %}</span>
-        <a href="{% url 'citas:lista' %}" style="font-family:var(--cn-font-mono);font-size:0.7rem;color:var(--cn-text-muted);text-decoration:none;letter-spacing:1px;">VER TODAS →</a>
+        <span><i class="bi bi-calendar-day me-2"></i>MIS CITAS DE HOY</span>
+        <a href="{% url 'citas:lista' %}" style="font-family:var(--cn-font-mono);font-size:0.7rem;color:var(--cn-text-muted);text-decoration:none">VER TODAS →</a>
     </div>
     <div class="card-body p-0">
         {% if citas_hoy %}
         <div class="table-responsive">
-            <table class="table-cn w-100">
-                <thead>
-                    <tr>
-                        <th>Hora</th>
-                        <th>Cliente</th>
-                        {% if not barbero_actual %}<th class="col-hide-sm">Barbero</th>{% endif %}
-                        <th>Servicio</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
+            <table class="table-cn" style="min-width:480px;width:100%">
+                <thead><tr>
+                    <th style="width:60px">Hora</th>
+                    <th>Cliente</th>
+                    <th>Servicio</th>
+                    <th style="width:100px">Estado</th>
+                    <th style="width:80px"></th>
+                </tr></thead>
                 <tbody>
                 {% for cita in citas_hoy %}
                 <tr>
-                    <td><span style="font-family:var(--cn-font-mono);color:var(--cn-accent)">{{ cita.fecha_hora|date:"H:i" }}</span></td>
-                    <td><strong>{{ cita.cliente.nombre }}</strong><br><small style="color:var(--cn-text-muted)">{{ cita.cliente.telefono }}</small></td>
-                    {% if not barbero_actual %}<td class="col-hide-sm">{{ cita.barbero.usuario.get_full_name|default:cita.barbero.usuario.username }}</td>{% endif %}
-                    <td>{{ cita.servicio.nombre|default:"—" }}</td>
+                    <td style="font-family:var(--cn-font-mono);color:var(--cn-accent)">{{ cita.fecha_hora|date:"H:i" }}</td>
+                    <td>
+                        <strong>{{ cita.cliente.nombre }}</strong>
+                        <br><small style="color:var(--cn-text-muted)">{{ cita.cliente.telefono }}</small>
+                    </td>
+                    <td style="color:var(--cn-text-muted)">{{ cita.servicio.nombre|default:"—" }}</td>
                     <td><span class="estado-badge badge-{{ cita.estado }}">{{ cita.get_estado_display }}</span></td>
                     <td>
-                        <a href="{% url 'citas:detalle' cita.pk %}" class="btn-cn-outline" style="font-size:0.7rem;padding:0.2rem 0.6rem">Ver</a>
+                        <div class="d-flex gap-1">
+                            <a href="{% url 'citas:detalle' cita.pk %}" class="btn-cn-outline" style="font-size:0.7rem;padding:0.2rem 0.5rem" title="Ver"><i class="bi bi-eye"></i></a>
+                            {% if cita.estado == 'pendiente' or cita.estado == 'confirmado' %}{% if not cita.venta %}
+                            <a href="{% url 'ventas:nueva' %}?cita={{ cita.pk }}" class="btn-cn-primary" style="font-size:0.7rem;padding:0.2rem 0.5rem" title="Cobrar"><i class="bi bi-cash-coin"></i></a>
+                            {% endif %}{% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
@@ -109,4 +114,225 @@
         {% endif %}
     </div>
 </div>
+
+{% else %}
+<!-- ═══════════════ PANEL ADMIN / RECEPCIONISTA ═══════════════ -->
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+        <div class="page-title">DASHBOARD</div>
+        <div class="page-subtitle">☠ Resumen operativo — {{ request.user.get_full_name|default:request.user.username }}</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'citas:nueva' %}" class="btn-cn-primary text-decoration-none">
+            <i class="bi bi-plus-circle me-1"></i>NUEVA CITA
+        </a>
+        <a href="{% url 'ventas:nueva' %}" class="btn-cn-outline text-decoration-none">
+            <i class="bi bi-cash-coin me-1"></i>NUEVA VENTA
+        </a>
+    </div>
+</div>
+
+{% if productos_bajo_stock %}
+<div class="alert-cn error mb-4">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <strong>Stock bajo:</strong> {{ productos_bajo_stock }} producto{{ productos_bajo_stock|pluralize:"s" }} con stock mínimo.
+    <a href="{% url 'inventario:alertas' %}" style="color:var(--cn-accent);text-decoration:none;margin-left:8px;font-weight:700">Ver alertas →</a>
+</div>
+{% endif %}
+
+<!-- Admin: HOY -->
+<div style="font-family:var(--cn-font-mono);font-size:0.65rem;letter-spacing:3px;color:var(--cn-text-muted);margin-bottom:0.5rem">HOY — {{ hoy|date:"d/m/Y" }}</div>
+<div class="row g-3 mb-3">
+    <div class="col-6 col-sm-3">
+        <div class="stat-card gold">
+            <div class="stat-icon"><i class="bi bi-scissors"></i></div>
+            <div class="stat-value">{{ total_citas }}</div>
+            <div class="stat-label">Citas</div>
+        </div>
+    </div>
+    <div class="col-6 col-sm-3">
+        <div class="stat-card green">
+            <div class="stat-icon"><i class="bi bi-check2-circle"></i></div>
+            <div class="stat-value">{{ citas_atendidas }}</div>
+            <div class="stat-label">Atendidas</div>
+        </div>
+    </div>
+    <div class="col-6 col-sm-3">
+        <div class="stat-card red">
+            <div class="stat-icon"><i class="bi bi-receipt"></i></div>
+            <div class="stat-value">{{ ventas_count }}</div>
+            <div class="stat-label">Ventas</div>
+        </div>
+    </div>
+    <div class="col-6 col-sm-3">
+        <div class="stat-card" style="border-color:rgba(200,169,81,0.4)">
+            <div class="stat-icon" style="color:var(--cn-accent)"><i class="bi bi-cash-stack"></i></div>
+            <div class="stat-value" style="font-size:1.3rem;color:var(--cn-accent)">Bs.{{ ingresos_hoy|floatformat:0 }}</div>
+            <div class="stat-label">Ingresos</div>
+        </div>
+    </div>
+</div>
+
+<!-- Admin: ESTE MES -->
+<div style="font-family:var(--cn-font-mono);font-size:0.65rem;letter-spacing:3px;color:var(--cn-text-muted);margin-bottom:0.5rem">ESTE MES</div>
+<div class="row g-3 mb-4">
+    <div class="col-6">
+        <div class="card-cn h-100">
+            <div class="card-body d-flex align-items-center gap-3" style="padding:1rem 1.2rem">
+                <div style="font-size:2rem;color:var(--cn-accent);opacity:0.6"><i class="bi bi-scissors"></i></div>
+                <div>
+                    <div style="font-family:var(--cn-font-display);font-size:2rem;color:var(--cn-accent);letter-spacing:2px;line-height:1">{{ citas_mes }}</div>
+                    <div style="font-family:var(--cn-font-mono);font-size:0.7rem;color:var(--cn-text-muted);letter-spacing:1px">CITAS DEL MES</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6">
+        <div class="card-cn h-100">
+            <div class="card-body d-flex align-items-center gap-3" style="padding:1rem 1.2rem">
+                <div style="font-size:2rem;color:var(--cn-accent);opacity:0.6"><i class="bi bi-cash-stack"></i></div>
+                <div>
+                    <div style="font-family:var(--cn-font-display);font-size:1.6rem;color:var(--cn-accent);letter-spacing:2px;line-height:1">Bs.{{ ingresos_mes|floatformat:0 }}</div>
+                    <div style="font-family:var(--cn-font-mono);font-size:0.7rem;color:var(--cn-text-muted);letter-spacing:1px;margin-top:2px">INGRESOS DEL MES</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rendimiento barberos hoy -->
+{% if barberos_hoy %}
+<div class="card-cn mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-people me-2"></i>BARBEROS HOY</span>
+        <a href="{% url 'reportes:barberos' %}?periodo=dia" style="font-family:var(--cn-font-mono);font-size:0.7rem;color:var(--cn-text-muted);text-decoration:none">REPORTE →</a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table-cn" style="min-width:520px;width:100%">
+                <thead><tr>
+                    <th>Barbero</th>
+                    <th style="width:70px;text-align:center">Citas</th>
+                    <th style="width:80px;text-align:center">Atend.</th>
+                    <th style="width:130px">Ingresos</th>
+                    <th style="width:130px">Comisión</th>
+                    <th style="width:120px">Neto local</th>
+                </tr></thead>
+                <tbody>
+                {% for b in barberos_hoy %}
+                <tr>
+                    <td>
+                        <strong>{{ b.barbero.usuario.get_full_name|default:b.barbero.usuario.username }}</strong>
+                        {% if b.barbero.especialidad %}<br><small style="color:var(--cn-text-muted);font-size:0.72rem">{{ b.barbero.especialidad }}</small>{% endif %}
+                    </td>
+                    <td style="font-family:var(--cn-font-mono);text-align:center">{{ b.total }}</td>
+                    <td style="text-align:center">
+                        <span style="font-family:var(--cn-font-mono);color:#5aad5a;font-weight:700">{{ b.atendidas }}</span>
+                        {% if b.pendientes %}<span style="font-size:0.68rem;color:var(--cn-accent)"> +{{ b.pendientes }}⏳</span>{% endif %}
+                    </td>
+                    <td style="font-family:var(--cn-font-mono);color:var(--cn-accent);font-weight:700">Bs. {{ b.ingresos|floatformat:2 }}</td>
+                    <td style="font-family:var(--cn-font-mono);color:#5aad5a;font-size:0.82rem">
+                        Bs. {{ b.comision|floatformat:2 }}
+                        <span style="color:var(--cn-text-muted);font-size:0.68rem">({{ b.barbero.comision_porcentaje }}%)</span>
+                    </td>
+                    <td style="font-family:var(--cn-font-mono);color:var(--cn-accent2);font-size:0.82rem">Bs. {{ b.neto|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Citas de hoy + Ventas recientes -->
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card-cn h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-calendar-day me-2"></i>CITAS DE HOY</span>
+                <a href="{% url 'citas:lista' %}" style="font-family:var(--cn-font-mono);font-size:0.7rem;color:var(--cn-text-muted);text-decoration:none">VER TODAS →</a>
+            </div>
+            <div class="card-body p-0">
+                {% if citas_hoy %}
+                <div class="table-responsive">
+                    <table class="table-cn" style="min-width:460px;width:100%">
+                        <thead><tr>
+                            <th style="width:60px">Hora</th>
+                            <th>Cliente</th>
+                            <th style="width:110px">Barbero</th>
+                            <th style="width:90px">Estado</th>
+                            <th style="width:40px"></th>
+                        </tr></thead>
+                        <tbody>
+                        {% for cita in citas_hoy %}
+                        <tr>
+                            <td style="font-family:var(--cn-font-mono);color:var(--cn-accent)">{{ cita.fecha_hora|date:"H:i" }}</td>
+                            <td>
+                                <strong>{{ cita.cliente.nombre }}</strong>
+                                <br><small style="color:var(--cn-text-muted)">{{ cita.servicio.nombre|default:"—" }}</small>
+                            </td>
+                            <td style="font-size:0.85rem">{{ cita.barbero.usuario.get_full_name|default:cita.barbero.usuario.username }}</td>
+                            <td><span class="estado-badge badge-{{ cita.estado }}">{{ cita.get_estado_display }}</span></td>
+                            <td><a href="{% url 'citas:detalle' cita.pk %}" class="btn-cn-outline" style="font-size:0.7rem;padding:0.2rem 0.4rem"><i class="bi bi-eye"></i></a></td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5" style="color:var(--cn-text-muted)">
+                    <div style="font-size:3rem;opacity:0.3">☠</div>
+                    <p style="font-family:var(--cn-font-mono);font-size:0.8rem;letter-spacing:2px;margin-top:0.5rem">SIN CITAS PARA HOY</p>
+                    <a href="{% url 'citas:nueva' %}" class="btn-cn-primary text-decoration-none mt-2 d-inline-block">AGENDAR PRIMERA CITA</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card-cn h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-cash-coin me-2"></i>VENTAS DE HOY</span>
+                <a href="{% url 'ventas:lista' %}" style="font-family:var(--cn-font-mono);font-size:0.7rem;color:var(--cn-text-muted);text-decoration:none">VER TODAS →</a>
+            </div>
+            <div class="card-body p-0">
+                {% if ventas_recientes %}
+                {% for v in ventas_recientes %}
+                <a href="{% url 'ventas:detalle' v.pk %}"
+                   style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1rem;border-bottom:1px solid var(--cn-border);text-decoration:none;color:var(--cn-text);transition:background 0.15s"
+                   onmouseover="this.style.background='rgba(200,169,81,0.05)'"
+                   onmouseout="this.style.background=''">
+                    <div style="width:30px;height:30px;border-radius:50%;background:rgba(200,169,81,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                        {% if v.metodo_pago == 'efectivo' %}<i class="bi bi-cash" style="color:var(--cn-accent);font-size:0.82rem"></i>
+                        {% elif v.metodo_pago == 'qr' %}<i class="bi bi-qr-code" style="color:#5a8adf;font-size:0.82rem"></i>
+                        {% else %}<i class="bi bi-credit-card" style="color:#a06adf;font-size:0.82rem"></i>{% endif %}
+                    </div>
+                    <div style="flex:1;min-width:0">
+                        <div style="font-size:0.88rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                            {{ v.cliente.nombre|default:"Sin cliente" }}
+                        </div>
+                        <div style="font-family:var(--cn-font-mono);font-size:0.68rem;color:var(--cn-text-muted)">
+                            {% if v.barbero %}{{ v.barbero.usuario.get_full_name|default:v.barbero.usuario.username }}{% else %}—{% endif %} · {{ v.fecha|date:"H:i" }}
+                        </div>
+                    </div>
+                    <div style="font-family:var(--cn-font-display);font-size:1rem;letter-spacing:1px;color:var(--cn-accent);flex-shrink:0">
+                        Bs.{{ v.total|floatformat:0 }}
+                    </div>
+                </a>
+                {% endfor %}
+                {% else %}
+                <div class="text-center py-4" style="color:var(--cn-text-muted)">
+                    <div style="font-size:2rem;opacity:0.2">☠</div>
+                    <p style="font-family:var(--cn-font-mono);font-size:0.75rem;letter-spacing:2px;margin-top:0.4rem">SIN VENTAS HOY</p>
+                    <a href="{% url 'ventas:nueva' %}" class="btn-cn-primary text-decoration-none mt-1 d-inline-block" style="font-size:0.8rem">REGISTRAR VENTA</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endif %}
 {% endblock %}

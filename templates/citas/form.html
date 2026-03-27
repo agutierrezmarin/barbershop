@@ -52,13 +52,57 @@
             </div>
 
             <div class="d-flex gap-2 mt-4">
-                <button type="submit" class="btn-cn-primary"><i class="bi bi-check-circle me-1"></i>GUARDAR CITA</button>
+                <button type="submit" id="btnGuardar" class="btn-cn-primary"><i class="bi bi-check-circle me-1"></i>GUARDAR CITA</button>
                 <a href="{% url 'citas:lista' %}" class="btn-cn-outline text-decoration-none">CANCELAR</a>
             </div>
         </form>
     </div>
 </div>
 </div>
+</div>
+
+<!-- Modal: conflicto de horario -->
+<div id="conflictoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9000;align-items:center;justify-content:center">
+    <div style="background:var(--cn-surface);border:1px solid var(--cn-accent2);border-radius:4px;max-width:420px;width:90%;padding:0;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,0.8)">
+        <!-- Header -->
+        <div style="background:rgba(139,26,26,0.15);border-bottom:1px solid rgba(139,26,26,0.35);padding:1rem 1.2rem;display:flex;align-items:center;gap:0.75rem">
+            <i class="bi bi-exclamation-triangle-fill" style="color:var(--cn-accent2);font-size:1.4rem;flex-shrink:0"></i>
+            <div>
+                <div style="font-family:var(--cn-font-display);font-size:1.3rem;letter-spacing:3px;color:var(--cn-accent2)">CONFLICTO DE HORARIO</div>
+                <div style="font-family:var(--cn-font-mono);font-size:0.62rem;color:var(--cn-text-muted);letter-spacing:2px;margin-top:2px">NO SE PUEDE REGISTRAR LA CITA</div>
+            </div>
+        </div>
+        <!-- Body -->
+        <div style="padding:1.2rem">
+            <p style="font-family:var(--cn-font-mono);font-size:0.8rem;color:var(--cn-text-muted);margin-bottom:1rem">
+                El barbero ya tiene una cita registrada en ese horario:
+            </p>
+            <div style="background:var(--cn-surface2);border:1px solid var(--cn-border);border-left:3px solid var(--cn-accent2);border-radius:2px;padding:0.85rem 1rem">
+                <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem">
+                    <i class="bi bi-person-fill" style="color:var(--cn-accent);font-size:0.9rem"></i>
+                    <span id="conflictoCliente" style="font-weight:700;font-size:1rem"></span>
+                </div>
+                <div style="font-family:var(--cn-font-mono);font-size:0.78rem;color:var(--cn-accent);margin-bottom:0.25rem">
+                    <i class="bi bi-clock me-1"></i>
+                    <span id="conflictoHoras"></span>
+                    <span style="opacity:0.6"> — </span>
+                    <span id="conflictoFecha" style="color:var(--cn-text-muted)"></span>
+                </div>
+                <div style="font-family:var(--cn-font-mono);font-size:0.72rem;color:var(--cn-text-muted)">
+                    <i class="bi bi-scissors me-1"></i><span id="conflictoServicio"></span>
+                </div>
+            </div>
+            <p style="font-family:var(--cn-font-mono);font-size:0.72rem;color:var(--cn-text-muted);margin-top:0.9rem;margin-bottom:0">
+                Cambia la hora o el barbero para continuar.
+            </p>
+        </div>
+        <!-- Footer -->
+        <div style="padding:0.8rem 1.2rem;border-top:1px solid var(--cn-border);text-align:right">
+            <button onclick="cerrarConflictoModal()" class="btn-cn-primary" style="background:var(--cn-accent2)">
+                <i class="bi bi-x-circle me-1"></i>ENTENDIDO
+            </button>
+        </div>
+    </div>
 </div>
 {% endblock %}
 {% block extra_js %}
@@ -176,6 +220,7 @@
 // ── Slots disponibles ─────────────────────────────────────────────────────────
 const barberoSel = document.querySelector('[name="barbero"]');
 const fechaSel   = document.querySelector('[name="fecha_hora"]');
+const duracionSel = document.querySelector('[name="duracion_minutos"]');
 
 function cargarSlots() {
     const barbero = barberoSel?.value;
@@ -207,9 +252,92 @@ function setSlot(fecha, hora) {
     });
     event.target.style.borderColor = 'var(--cn-accent)';
     event.target.style.color = 'var(--cn-accent)';
+    verificarConflicto();
 }
 
-if (barberoSel) barberoSel.addEventListener('change', cargarSlots);
-if (fechaSel)   fechaSel.addEventListener('change', cargarSlots);
+if (barberoSel) barberoSel.addEventListener('change', () => { cargarSlots(); verificarConflicto(); });
+if (fechaSel)   fechaSel.addEventListener('change',   () => { cargarSlots(); verificarConflicto(); });
+if (duracionSel) duracionSel.addEventListener('change', verificarConflicto);
+
+// ── Verificación de conflicto de horario ──────────────────────────────────────
+let conflictoActivo = false;
+let conflictoTimer  = null;
+const EXCLUIR_PK    = '{% if cita %}{{ cita.pk }}{% endif %}';
+
+function verificarConflicto() {
+    clearTimeout(conflictoTimer);
+    conflictoTimer = setTimeout(_doVerificar, 350);
+}
+
+function _doVerificar() {
+    const barbero  = barberoSel?.value;
+    const fechaVal = fechaSel?.value;
+    const duracion = duracionSel?.value || 30;
+    if (!barbero || !fechaVal) { _limpiarConflictoUI(); return; }
+
+    const params = new URLSearchParams({ barbero, fecha_hora: fechaVal, duracion });
+    if (EXCLUIR_PK) params.set('excluir', EXCLUIR_PK);
+
+    fetch(`/citas/api/verificar-conflicto/?${params}`, { credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.conflicto) {
+                _mostrarConflictoInline(data);
+            } else {
+                _limpiarConflictoUI();
+            }
+        })
+        .catch(() => _limpiarConflictoUI());
+}
+
+function _mostrarConflictoInline(data) {
+    conflictoActivo = true;
+    let aviso = document.getElementById('conflictoAviso');
+    if (!aviso) {
+        aviso = document.createElement('div');
+        aviso.id = 'conflictoAviso';
+        aviso.style.cssText = 'margin-top:-0.5rem;margin-bottom:1rem;padding:0.7rem 1rem;background:rgba(139,26,26,0.1);border:1px solid rgba(139,26,26,0.4);border-left:3px solid var(--cn-accent2);border-radius:2px;font-family:var(--cn-font-mono);font-size:0.75rem;color:#e07070;display:flex;align-items:flex-start;gap:0.6rem';
+        const btnGuardar = document.getElementById('btnGuardar');
+        btnGuardar.parentElement.before(aviso);
+    }
+    aviso.innerHTML = `<i class="bi bi-exclamation-triangle-fill" style="flex-shrink:0;margin-top:1px"></i>
+        <div>
+            <strong>Conflicto:</strong> ${data.barbero} ya tiene cita con
+            <strong>${data.cliente}</strong>
+            de <strong>${data.hora_inicio}</strong> a <strong>${data.hora_fin}</strong>
+            (${data.fecha}).
+            <br>Cambia la hora o el barbero.
+        </div>`;
+    const btn = document.getElementById('btnGuardar');
+    btn.disabled = true;
+    btn.style.opacity = '0.4';
+    btn.style.cursor = 'not-allowed';
+    btn.title = 'Hay un conflicto de horario';
+}
+
+function _limpiarConflictoUI() {
+    conflictoActivo = false;
+    const aviso = document.getElementById('conflictoAviso');
+    if (aviso) aviso.remove();
+    const btn = document.getElementById('btnGuardar');
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.style.cursor = ''; btn.title = ''; }
+}
+
+// Bloquear submit si hay conflicto (defensa adicional)
+document.getElementById('citaForm')?.addEventListener('submit', function(e) {
+    if (conflictoActivo) {
+        e.preventDefault();
+        // Mostrar modal completo si aún así intentan enviar
+        const aviso = document.getElementById('conflictoAviso');
+        if (aviso) aviso.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+});
+
+function cerrarConflictoModal() {
+    document.getElementById('conflictoModal').style.display = 'none';
+}
+
+// Verificar al cargar (modo edición: puede haber datos ya cargados)
+if (barberoSel?.value && fechaSel?.value) verificarConflicto();
 </script>
 {% endblock %}

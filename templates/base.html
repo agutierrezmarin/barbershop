@@ -175,19 +175,6 @@
             color: #e07070; font-family: var(--cn-font-mono);
             display: flex; align-items: center; gap: 0.4rem;
         }
-        .notif-proxima {
-            padding: 0.7rem 1rem; background: rgba(200,169,81,0.06);
-            border-bottom: 1px solid var(--cn-border);
-        }
-        .notif-proxima-label {
-            font-family: var(--cn-font-mono); font-size: 0.6rem;
-            letter-spacing: 2px; color: var(--cn-text-muted); text-transform: uppercase;
-            margin-bottom: 3px;
-        }
-        .notif-proxima-nombre { font-weight: 700; font-size: 0.95rem; }
-        .notif-proxima-hora {
-            font-family: var(--cn-font-mono); font-size: 0.75rem; color: var(--cn-accent);
-        }
         .notif-item {
             padding: 0.65rem 1rem; border-bottom: 1px solid var(--cn-border);
             text-decoration: none; display: flex; align-items: center; gap: 0.75rem;
@@ -203,6 +190,16 @@
         .notif-item-cliente { font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .notif-item-meta { font-family: var(--cn-font-mono); font-size: 0.68rem; color: var(--cn-text-muted); margin-top: 1px; }
         .notif-item-hora { font-family: var(--cn-font-mono); font-size: 0.78rem; color: var(--cn-accent); flex-shrink: 0; }
+        .notif-item.proxima {
+            background: rgba(200,169,81,0.07);
+            border-left: 3px solid var(--cn-accent);
+        }
+        .notif-item.proxima .notif-item-hora::after {
+            content: ' ↑';
+            font-size: 0.62rem;
+            color: var(--cn-accent);
+            opacity: 0.7;
+        }
         .notif-empty {
             padding: 2.5rem 1rem; text-align: center; color: var(--cn-text-muted);
             font-family: var(--cn-font-mono); font-size: 0.72rem; letter-spacing: 1px;
@@ -853,73 +850,74 @@
                 <!-- Body scrollable -->
                 <div class="notif-modal-body">
 
-                    {% if user.es_barbero %}
-                    <!-- Barbero: saludo personalizado -->
-                    <div style="padding:0.5rem 1rem;background:rgba(200,169,81,0.04);border-bottom:1px solid var(--cn-border);font-family:var(--cn-font-mono);font-size:0.68rem;color:var(--cn-text-muted)">
-                        <i class="bi bi-scissors me-1"></i>{{ user.get_full_name|default:user.username|upper }}
+                    {% if not user.es_barbero %}
+                    <!-- Admin: resumen rápido del día -->
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--cn-border)">
+                        <div style="padding:0.6rem 0.75rem;text-align:center;border-right:1px solid var(--cn-border)">
+                            <div style="font-family:var(--cn-font-display);font-size:1.3rem;color:var(--cn-accent);letter-spacing:1px">{{ nav_total_hoy }}</div>
+                            <div style="font-family:var(--cn-font-mono);font-size:0.58rem;letter-spacing:1px;color:var(--cn-text-muted);text-transform:uppercase">Total</div>
+                        </div>
+                        <div style="padding:0.6rem 0.75rem;text-align:center;border-right:1px solid var(--cn-border)">
+                            <div style="font-family:var(--cn-font-display);font-size:1.3rem;color:#5aad5a;letter-spacing:1px">{{ nav_atendidas_hoy }}</div>
+                            <div style="font-family:var(--cn-font-mono);font-size:0.58rem;letter-spacing:1px;color:var(--cn-text-muted);text-transform:uppercase">Atendidas</div>
+                        </div>
+                        <div style="padding:0.6rem 0.75rem;text-align:center">
+                            <div style="font-family:var(--cn-font-display);font-size:1.3rem;color:var(--cn-accent);letter-spacing:1px">{{ nav_pendientes_hoy }}</div>
+                            <div style="font-family:var(--cn-font-mono);font-size:0.58rem;letter-spacing:1px;color:var(--cn-text-muted);text-transform:uppercase">Pendientes</div>
+                        </div>
                     </div>
                     {% endif %}
 
                     {% if nav_sin_atender > 0 %}
                     <div class="notif-alerta">
                         <i class="bi bi-exclamation-triangle-fill"></i>
-                        {{ nav_sin_atender }} cita{{ nav_sin_atender|pluralize:"s" }} pasada{{ nav_sin_atender|pluralize:"s" }} sin atender
-                    </div>
-                    {% endif %}
-
-                    {% if nav_proxima %}
-                    <div class="notif-proxima">
-                        <div class="notif-proxima-label"><i class="bi bi-clock me-1"></i>PRÓXIMA CITA</div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <div class="notif-proxima-nombre">{{ nav_proxima.cliente.nombre }}</div>
-                                <div class="notif-proxima-hora">
-                                    {{ nav_proxima.fecha_hora|date:"H:i" }}
-                                    {% if nav_proxima.servicio %} · {{ nav_proxima.servicio.nombre }}{% endif %}
-                                    {% if not user.es_barbero %} · {{ nav_proxima.barbero.usuario.get_full_name|default:nav_proxima.barbero.usuario.username }}{% endif %}
-                                </div>
-                            </div>
-                            <a href="{% url 'citas:detalle' nav_proxima.pk %}"
-                               style="font-family:var(--cn-font-mono);font-size:0.68rem;color:var(--cn-accent);text-decoration:none;border:1px solid rgba(200,169,81,0.3);padding:0.2rem 0.6rem;border-radius:2px;white-space:nowrap">
-                                Ver →
-                            </a>
-                        </div>
+                        {{ nav_sin_atender }} cita{{ nav_sin_atender|pluralize:"s" }} sin atender de hoy
                     </div>
                     {% endif %}
 
                     {% if nav_citas_hoy %}
                         {% for cita in nav_citas_hoy %}
-                        <a href="{% url 'citas:detalle' cita.pk %}" class="notif-item">
+                        <a href="{% url 'citas:detalle' cita.pk %}" class="notif-item{% if nav_proxima and cita.pk == nav_proxima.pk %} proxima{% endif %}">
                             <div class="notif-item-dot {{ cita.estado }}"></div>
                             <div class="notif-item-info">
                                 <div class="notif-item-cliente">{{ cita.cliente.nombre }}</div>
                                 <div class="notif-item-meta">
-                                    {{ cita.servicio.nombre|default:"—" }}
-                                    {% if not user.es_barbero %} · {{ cita.barbero.usuario.get_full_name|default:cita.barbero.usuario.username }}{% endif %}
-                                    · <span style="color:{% if cita.estado == 'confirmado' %}#5aad5a{% else %}var(--cn-accent){% endif %}">{{ cita.get_estado_display }}</span>
+                                    {{ cita.servicio.nombre|default:"—" }}{% if not user.es_barbero %} · {{ cita.barbero.usuario.get_full_name|default:cita.barbero.usuario.username }}{% endif %}
                                 </div>
                             </div>
-                            <span class="notif-item-hora">{{ cita.fecha_hora|date:"H:i" }}</span>
+                            <div style="text-align:right;flex-shrink:0">
+                                <span class="notif-item-hora">{{ cita.fecha_hora|date:"H:i" }}</span>
+                                <br><span style="font-family:var(--cn-font-mono);font-size:0.62rem;color:{% if cita.estado == 'confirmado' %}#5aad5a{% else %}var(--cn-accent){% endif %}">{{ cita.get_estado_display }}</span>
+                            </div>
                         </a>
                         {% endfor %}
                     {% else %}
                     <div class="notif-empty">
                         <div style="font-size:2.5rem;opacity:0.2;margin-bottom:0.5rem">☠</div>
-                        {% if user.es_barbero %}SIN CITAS ASIGNADAS{% else %}SIN CITAS HOY{% endif %}
+                        {% if user.es_barbero %}SIN CITAS PARA HOY{% else %}SIN CITAS HOY{% endif %}
                     </div>
                     {% endif %}
 
                 </div>
 
                 <!-- Footer -->
-                <div class="notif-modal-footer">
+                <div class="notif-modal-footer" style="display:flex;gap:0">
                     {% if user.es_barbero %}
-                    <a href="{% url 'citas:lista' %}">
-                        <i class="bi bi-list-ul me-1"></i>VER MIS CITAS →
+                    <a href="{% url 'citas:lista' %}" style="flex:1;padding:0.6rem 0.75rem">
+                        <i class="bi bi-list-ul me-1"></i>VER MIS CITAS
+                    </a>
+                    <a href="{% url 'citas:nueva' %}" style="flex:1;padding:0.6rem 0.75rem;border-left:1px solid var(--cn-border)">
+                        <i class="bi bi-plus-circle me-1"></i>NUEVA CITA
                     </a>
                     {% else %}
-                    <a href="{% url 'citas:agenda' %}">
-                        <i class="bi bi-calendar3 me-1"></i>VER AGENDA COMPLETA →
+                    <a href="{% url 'citas:agenda' %}" style="flex:1;padding:0.6rem 0.75rem">
+                        <i class="bi bi-calendar3 me-1"></i>AGENDA
+                    </a>
+                    <a href="{% url 'citas:lista' %}" style="flex:1;padding:0.6rem 0.75rem;border-left:1px solid var(--cn-border)">
+                        <i class="bi bi-list-ul me-1"></i>LISTA DE CITAS
+                    </a>
+                    <a href="{% url 'citas:nueva' %}" style="flex:1;padding:0.6rem 0.75rem;border-left:1px solid var(--cn-border)">
+                        <i class="bi bi-plus-circle me-1"></i>NUEVA
                     </a>
                     {% endif %}
                 </div>
@@ -980,24 +978,40 @@
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-section">Principal</div>
         <a href="{% url 'citas:dashboard' %}" class="sidebar-link {% if request.resolver_match.namespace == 'citas' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-            <i class="bi bi-grid-3x3-gap-fill"></i> Dashboard
+            <i class="bi bi-grid-3x3-gap-fill"></i> {% if user.es_barbero %}Mi Panel{% else %}Dashboard{% endif %}
         </a>
-        <a href="{% url 'citas:agenda' %}" class="sidebar-link">
+        {% if not user.es_barbero %}
+        <a href="{% url 'citas:agenda' %}" class="sidebar-link {% if request.resolver_match.namespace == 'citas' and request.resolver_match.url_name == 'agenda' %}active{% endif %}">
             <i class="bi bi-calendar3"></i> Agenda
         </a>
+        {% endif %}
 
         <div class="skull-sep"><span>☠</span></div>
 
-        <div class="sidebar-section">Operaciones</div>
-        <a href="{% url 'citas:lista' %}" class="sidebar-link {% if request.resolver_match.namespace == 'citas' and 'lista' in request.resolver_match.url_name %}active{% endif %}">
-            <i class="bi bi-scissors"></i> Citas
+        <div class="sidebar-section">{% if user.es_barbero %}Mis Citas{% else %}Operaciones{% endif %}</div>
+        <a href="{% url 'citas:lista' %}" class="sidebar-link {% if request.resolver_match.namespace == 'citas' and request.resolver_match.url_name == 'lista' %}active{% endif %}">
+            <i class="bi bi-scissors"></i> {% if user.es_barbero %}Mis Citas{% else %}Citas{% endif %}
         </a>
-        <a href="{% url 'ventas:nueva' %}" class="sidebar-link">
+        {% if not user.es_barbero %}
+        <a href="{% url 'citas:agenda' %}" class="sidebar-link {% if request.resolver_match.namespace == 'citas' and request.resolver_match.url_name == 'agenda' %}active{% endif %}">
+            <i class="bi bi-calendar3-week"></i> Agenda
+        </a>
+        {% endif %}
+
+        <div class="skull-sep"><span>☠</span></div>
+
+        <div class="sidebar-section">Ventas</div>
+        <a href="{% url 'ventas:nueva' %}" class="sidebar-link {% if request.resolver_match.namespace == 'ventas' and request.resolver_match.url_name == 'nueva' %}active{% endif %}">
             <i class="bi bi-cash-coin"></i> Nueva Venta
         </a>
-        <a href="{% url 'ventas:corte_caja' %}" class="sidebar-link">
+        <a href="{% url 'ventas:lista' %}" class="sidebar-link {% if request.resolver_match.namespace == 'ventas' and request.resolver_match.url_name == 'lista' %}active{% endif %}">
+            <i class="bi bi-receipt"></i> {% if user.es_barbero %}Mis Ventas{% else %}Ventas{% endif %}
+        </a>
+        {% if not user.es_barbero %}
+        <a href="{% url 'ventas:corte_caja' %}" class="sidebar-link {% if request.resolver_match.namespace == 'ventas' and request.resolver_match.url_name == 'corte_caja' %}active{% endif %}">
             <i class="bi bi-safe2"></i> Corte de Caja
         </a>
+        {% endif %}
 
         <div class="skull-sep"><span>☠</span></div>
 
@@ -1015,13 +1029,14 @@
         <a href="{% url 'inventario:lista' %}" class="sidebar-link {% if request.resolver_match.namespace == 'inventario' %}active{% endif %}">
             <i class="bi bi-boxes"></i> Inventario
         </a>
-        {% endif %}
 
-        {% if not user.es_barbero %}
         <div class="skull-sep"><span>☠</span></div>
         <div class="sidebar-section">Reportes</div>
-        <a href="{% url 'reportes:general' %}" class="sidebar-link {% if request.resolver_match.namespace == 'reportes' %}active{% endif %}">
+        <a href="{% url 'reportes:general' %}" class="sidebar-link {% if request.resolver_match.namespace == 'reportes' and request.resolver_match.url_name == 'general' %}active{% endif %}">
             <i class="bi bi-bar-chart-fill"></i> Reportes
+        </a>
+        <a href="{% url 'reportes:historial' %}" class="sidebar-link {% if request.resolver_match.namespace == 'reportes' and request.resolver_match.url_name == 'historial' %}active{% endif %}">
+            <i class="bi bi-clock-history"></i> Historial
         </a>
         {% endif %}
 

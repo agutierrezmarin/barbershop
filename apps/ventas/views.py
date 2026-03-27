@@ -10,6 +10,7 @@ from .forms import VentaForm
 from apps.barberos.models import Barbero
 from apps.servicios.models import Servicio
 from apps.inventario.models import Producto
+from apps.accounts.utils import no_barbero
 
 @login_required
 def lista_ventas(request):
@@ -168,6 +169,14 @@ def nueva_venta(request):
 @login_required
 def detalle_venta(request, pk):
     venta = get_object_or_404(Venta, pk=pk)
+    if request.user.es_barbero:
+        try:
+            if venta.barbero != request.user.perfil_barbero:
+                messages.error(request, 'Solo puedes ver tus propias ventas.')
+                return redirect('ventas:lista')
+        except Exception:
+            messages.error(request, 'Sin acceso.')
+            return redirect('citas:dashboard')
     return render(request, 'ventas/detalle.html', {'venta': venta})
 
 def _resumen_ventas(qs):
@@ -178,6 +187,7 @@ def _resumen_ventas(qs):
             'cantidad': qs.count()}
 
 @login_required
+@no_barbero
 def corte_caja(request):
     hoy = timezone.now().date()
     periodo = request.GET.get('periodo', 'dia')
@@ -217,6 +227,7 @@ def corte_caja(request):
     })
 
 @login_required
+@no_barbero
 def realizar_corte(request):
     if request.method == 'POST':
         hoy = timezone.now().date()
@@ -236,6 +247,7 @@ def realizar_corte(request):
 
 
 @login_required
+@no_barbero
 def exportar_excel(request):
     import openpyxl
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side

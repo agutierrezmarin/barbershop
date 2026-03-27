@@ -33,34 +33,96 @@ def dashboard(request):
     from apps.clientes.models import Cliente
     from apps.ventas.models import Venta
     from apps.inventario.models import Producto
-    hoy = timezone.now().date()
-    citas_hoy = Cita.objects.filter(fecha_hora__date=hoy).select_related('cliente', 'barbero', 'servicio')
-    ventas_hoy = Venta.objects.filter(fecha__date=hoy)
+    from django.db.models import Sum, Count
+    from decimal import Decimal
+
+    ahora = timezone.now()
+    hoy   = ahora.date()
+    inicio_semana = hoy - timedelta(days=hoy.weekday())
+    inicio_mes    = hoy.replace(day=1)
+
+    citas_hoy = Cita.objects.filter(fecha_hora__date=hoy).select_related(
+        'cliente', 'barbero__usuario', 'servicio'
+    ).order_by('fecha_hora')
+
+    ventas_hoy_qs = Venta.objects.filter(fecha__date=hoy)
 
     barbero_actual = None
     if request.user.es_barbero:
         try:
             barbero_actual = request.user.perfil_barbero
-            citas_hoy = citas_hoy.filter(barbero=barbero_actual)
-            ventas_hoy = ventas_hoy.filter(barbero=barbero_actual)
+            citas_hoy      = citas_hoy.filter(barbero=barbero_actual)
+            ventas_hoy_qs  = ventas_hoy_qs.filter(barbero=barbero_actual)
         except Exception:
-            citas_hoy = citas_hoy.none()
-            ventas_hoy = ventas_hoy.none()
+            citas_hoy     = citas_hoy.none()
+            ventas_hoy_qs = ventas_hoy_qs.none()
 
-    ingresos_hoy = sum(v.total for v in ventas_hoy)
-    productos_bajo_stock = Producto.objects.filter(activo=True, stock_actual__lte=5).count() if not request.user.es_barbero else None
-    clientes_total = Cliente.objects.filter(activo=True).count() if not request.user.es_barbero else None
+    # ── Conteos citas hoy ─────────────────────────────────────────────────────
+    total_citas      = citas_hoy.count()
+    citas_pendientes = citas_hoy.filter(estado__in=['pendiente', 'confirmado']).count()
+    citas_atendidas  = citas_hoy.filter(estado='atendido').count()
+
+    # ── Ingresos hoy ──────────────────────────────────────────────────────────
+    ingresos_hoy  = ventas_hoy_qs.aggregate(t=Sum('total'))['t'] or Decimal('0')
+    ventas_count  = ventas_hoy_qs.count()
+
+    # ── Datos del mes (comunes a todos los roles) ──────────────────────────────
+    citas_mes_qs    = Cita.objects.filter(fecha_hora__date__gte=inicio_mes)
+    ventas_mes_qs   = Venta.objects.filter(fecha__date__gte=inicio_mes)
+    if request.user.es_barbero and barbero_actual:
+        citas_mes_qs  = citas_mes_qs.filter(barbero=barbero_actual)
+        ventas_mes_qs = ventas_mes_qs.filter(barbero=barbero_actual)
+
+    citas_mes    = citas_mes_qs.count()
+    ingresos_mes = ventas_mes_qs.aggregate(t=Sum('total'))['t'] or Decimal('0')
+
     context = {
-        'citas_hoy': citas_hoy,
-        'ingresos_hoy': ingresos_hoy,
-        'productos_bajo_stock': productos_bajo_stock,
-        'clientes_total': clientes_total,
-        'total_citas': citas_hoy.count(),
-        'citas_pendientes': citas_hoy.filter(estado='pendiente').count(),
-        'citas_confirmadas': citas_hoy.filter(estado='confirmado').count(),
-        'citas_atendidas': citas_hoy.filter(estado='atendido').count(),
-        'barbero_actual': barbero_actual,
+        'citas_hoy':        citas_hoy,
+        'total_citas':      total_citas,
+        'citas_pendientes': citas_pendientes,
+        'citas_atendidas':  citas_atendidas,
+        'ingresos_hoy':     ingresos_hoy,
+        'ventas_count':     ventas_count,
+        'citas_mes':        citas_mes,
+        'ingresos_mes':     ingresos_mes,
+        'hoy':              hoy,
     }
+
+    # ── Datos extras solo para admin/recepcionista ────────────────────────────
+    if not request.user.es_barbero:
+        productos_bajo_stock = Producto.objects.filter(
+            activo=True, stock_actual__lte=5
+        ).count()
+
+        # Rendimiento por barbero hoy
+        barberos_hoy = []
+        for b in Barbero.objects.filter(activo=True).select_related('usuario'):
+            citas_b   = citas_hoy.filter(barbero=b)
+            ventas_b  = Venta.objects.filter(fecha__date=hoy, barbero=b)
+            ing_b     = ventas_b.aggregate(t=Sum('total'))['t'] or Decimal('0')
+            comision_b = (ing_b * (b.comision_porcentaje or Decimal('0')) / 100).quantize(Decimal('0.01'))
+            barberos_hoy.append({
+                'barbero':    b,
+                'total':      citas_b.count(),
+                'atendidas':  citas_b.filter(estado='atendido').count(),
+                'pendientes': citas_b.filter(estado__in=['pendiente', 'confirmado']).count(),
+                'ingresos':   ing_b,
+                'comision':   comision_b,
+                'neto':       ing_b - comision_b,
+            })
+        barberos_hoy.sort(key=lambda x: x['ingresos'], reverse=True)
+
+        ventas_recientes = (Venta.objects
+                            .filter(fecha__date=hoy)
+                            .select_related('barbero__usuario', 'cliente')
+                            .order_by('-fecha')[:6])
+
+        context.update({
+            'productos_bajo_stock': productos_bajo_stock,
+            'barberos_hoy':         barberos_hoy,
+            'ventas_recientes':     ventas_recientes,
+        })
+
     return render(request, 'citas/dashboard.html', context)
 
 
@@ -108,12 +170,26 @@ def nueva_cita(request):
 @login_required
 def detalle_cita(request, pk):
     cita = get_object_or_404(Cita, pk=pk)
+    if request.user.es_barbero:
+        try:
+            if cita.barbero != request.user.perfil_barbero:
+                messages.error(request, 'Solo puedes ver tus propias citas.')
+                return redirect('citas:lista')
+        except Exception:
+            return redirect('citas:dashboard')
     return render(request, 'citas/detalle.html', {'cita': cita})
 
 
 @login_required
 def editar_cita(request, pk):
     cita = get_object_or_404(Cita, pk=pk)
+    if request.user.es_barbero:
+        try:
+            if cita.barbero != request.user.perfil_barbero:
+                messages.error(request, 'Solo puedes editar tus propias citas.')
+                return redirect('citas:lista')
+        except Exception:
+            return redirect('citas:dashboard')
     if request.method == 'POST':
         form = CitaForm(request.POST, instance=cita)
         if form.is_valid():
@@ -152,6 +228,53 @@ def agenda_barbero(request):
         'barberos': barberos,
         'colores_barberos': colores,
     })
+
+
+@login_required
+def api_verificar_conflicto(request):
+    """API: verifica si el barbero tiene cita que se superpone con el horario dado."""
+    from datetime import timedelta
+    barbero_id = request.GET.get('barbero')
+    fecha_str  = request.GET.get('fecha_hora')
+    duracion   = int(request.GET.get('duracion', 30))
+    excluir_pk = request.GET.get('excluir')
+
+    if not barbero_id or not fecha_str:
+        return JsonResponse({'conflicto': False})
+
+    try:
+        barbero    = Barbero.objects.get(pk=barbero_id)
+        fecha_hora = parse_datetime(fecha_str)
+        if not fecha_hora:
+            return JsonResponse({'conflicto': False})
+        if timezone.is_naive(fecha_hora):
+            fecha_hora = timezone.make_aware(fecha_hora)
+
+        hora_fin = fecha_hora + timedelta(minutes=duracion)
+
+        qs = Cita.objects.filter(
+            barbero=barbero,
+            estado__in=['pendiente', 'confirmado'],
+            fecha_hora__lt=hora_fin,
+        ).select_related('cliente', 'servicio')
+        if excluir_pk:
+            qs = qs.exclude(pk=excluir_pk)
+
+        for cita in qs:
+            if cita.hora_fin > fecha_hora:
+                return JsonResponse({
+                    'conflicto':    True,
+                    'cliente':      cita.cliente.nombre,
+                    'barbero':      str(barbero),
+                    'hora_inicio':  cita.fecha_hora.strftime('%H:%M'),
+                    'hora_fin':     cita.hora_fin.strftime('%H:%M'),
+                    'fecha':        cita.fecha_hora.strftime('%d/%m/%Y'),
+                    'servicio':     cita.servicio.nombre if cita.servicio else '—',
+                    'cita_pk':      cita.pk,
+                })
+        return JsonResponse({'conflicto': False})
+    except Exception:
+        return JsonResponse({'conflicto': False})
 
 
 @login_required

@@ -14,6 +14,7 @@ urlpatterns = [
     path('citas/<int:pk>/estado/', views.cambiar_estado, name='cambiar_estado'),
     path('citas/agenda/', views.agenda_barbero, name='agenda'),
     path('api/slots-disponibles/', views.slots_disponibles, name='slots_disponibles'),
+    path('api/verificar-conflicto/', views.api_verificar_conflicto, name='api_verificar_conflicto'),
 
     # API para FullCalendar
     path('api/agenda/recursos/', views.api_recursos, name='api_recursos'),

@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from apps.accounts.utils import no_barbero
 from .models import Cliente
 from .forms import ClienteForm
 
@@ -13,6 +14,7 @@ def lista_clientes(request):
     return render(request, 'clientes/lista.html', {'clientes': clientes, 'q': q})
 
 @login_required
+@no_barbero
 def nuevo_cliente(request):
     if request.method == 'POST':
         form = ClienteForm(request.POST)
@@ -31,6 +33,7 @@ def detalle_cliente(request, pk):
     return render(request, 'clientes/detalle.html', {'cliente': cliente, 'citas': citas})
 
 @login_required
+@no_barbero
 def editar_cliente(request, pk):
     cliente = get_object_or_404(Cliente, pk=pk)
     if request.method == 'POST':

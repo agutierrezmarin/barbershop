@@ -6,11 +6,13 @@ from .models import Producto, MovimientoStock
 from .forms import ProductoForm, AjusteStockForm
 
 @login_required
+@no_barbero
 def lista_productos(request):
     productos = Producto.objects.filter(activo=True).select_related('categoria')
     return render(request, 'inventario/lista.html', {'productos': productos})
 
 @login_required
+@no_barbero
 def nuevo_producto(request):
     if request.method == 'POST':
         form = ProductoForm(request.POST, request.FILES)
@@ -23,6 +25,7 @@ def nuevo_producto(request):
     return render(request, 'inventario/form.html', {'form': form, 'titulo': 'Nuevo Producto'})
 
 @login_required
+@no_barbero
 def editar_producto(request, pk):
     producto = get_object_or_404(Producto, pk=pk)
     if request.method == 'POST':
@@ -36,6 +39,7 @@ def editar_producto(request, pk):
     return render(request, 'inventario/form.html', {'form': form, 'titulo': 'Editar Producto', 'producto': producto})
 
 @login_required
+@no_barbero
 def ajuste_stock(request, pk):
     producto = get_object_or_404(Producto, pk=pk)
     if request.method == 'POST':
@@ -63,6 +67,7 @@ def ajuste_stock(request, pk):
     return render(request, 'inventario/ajuste_stock.html', {'form': form, 'producto': producto})
 
 @login_required
+@no_barbero
 def alertas_stock(request):
     productos = Producto.objects.filter(activo=True, stock_actual__lte=5)
     return render(request, 'inventario/alertas.html', {'productos': productos})

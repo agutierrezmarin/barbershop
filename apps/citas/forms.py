@@ -33,3 +33,34 @@ class CitaForm(forms.ModelForm):
                 field.widget.attrs = {}
             if 'class' not in field.widget.attrs:
                 field.widget.attrs['class'] = 'form-control'
+
+    def clean(self):
+        from datetime import timedelta
+        from django.utils import timezone as tz
+        cleaned_data = super().clean()
+        barbero = cleaned_data.get('barbero')
+        fecha_hora = cleaned_data.get('fecha_hora')
+        duracion = int(cleaned_data.get('duracion_minutos') or 30)
+
+        if barbero and fecha_hora:
+            if tz.is_naive(fecha_hora):
+                fecha_hora = tz.make_aware(fecha_hora)
+            hora_fin = fecha_hora + timedelta(minutes=duracion)
+
+            qs = Cita.objects.filter(
+                barbero=barbero,
+                estado__in=['pendiente', 'confirmado'],
+                fecha_hora__lt=hora_fin,
+            ).select_related('cliente')
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+
+            for cita in qs:
+                if cita.hora_fin > fecha_hora:
+                    raise forms.ValidationError(
+                        f'Conflicto: {barbero} ya tiene una cita con '
+                        f'{cita.cliente.nombre} de '
+                        f'{cita.fecha_hora.strftime("%H:%M")} a {cita.hora_fin.strftime("%H:%M")}. '
+                        f'Elige otro horario.'
+                    )
+        return cleaned_data

@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% block title %}Historial de Ventas{% endblock %}
+{% block content %}
+
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+        <div class="page-title">HISTORIAL DE VENTAS</div>
+        <div class="page-subtitle">☠ {{ titulo_periodo }} — detalle por venta</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+        <!-- Selector período rápido -->
+        <div class="d-flex gap-1">
+            <a href="?periodo=dia{% if barbero_pk %}&barbero={{ barbero_pk }}{% endif %}"
+               class="btn-cn-outline" style="font-size:0.78rem;padding:0.35rem 0.9rem{% if periodo == 'dia' %};border-color:var(--cn-accent);color:var(--cn-accent){% endif %}">
+                <i class="bi bi-sun me-1"></i>Hoy
+            </a>
+            <a href="?periodo=mes{% if barbero_pk %}&barbero={{ barbero_pk }}{% endif %}"
+               class="btn-cn-outline" style="font-size:0.78rem;padding:0.35rem 0.9rem{% if periodo == 'mes' %};border-color:var(--cn-accent);color:var(--cn-accent){% endif %}">
+                <i class="bi bi-calendar-month me-1"></i>Este mes
+            </a>
+            <a href="?periodo=anio{% if barbero_pk %}&barbero={{ barbero_pk }}{% endif %}"
+               class="btn-cn-outline" style="font-size:0.78rem;padding:0.35rem 0.9rem{% if periodo == 'anio' %};border-color:var(--cn-accent);color:var(--cn-accent){% endif %}">
+                <i class="bi bi-calendar3 me-1"></i>Este año
+            </a>
+        </div>
+        <!-- Descargar Excel -->
+        <a href="{% url 'reportes:historial_excel' %}?periodo={{ periodo }}{% if barbero_pk %}&barbero={{ barbero_pk }}{% endif %}{% if fecha_desde %}&desde={{ fecha_desde }}&hasta={{ fecha_hasta }}{% endif %}"
+           class="btn-cn-outline" style="font-size:0.78rem;padding:0.35rem 0.9rem;border-color:#2d6a2d;color:#5aad5a">
+            <i class="bi bi-file-earmark-excel me-1"></i>Excel
+        </a>
+    </div>
+</div>
+
+<!-- Filtros avanzados -->
+<div class="card-cn mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <input type="hidden" name="periodo" value="{{ periodo }}">
+            <div class="col-md-3 col-sm-6">
+                <label class="form-label">Barbero</label>
+                <select name="barbero" class="form-select">
+                    <option value="">Todos</option>
+                    {% for b in barberos %}
+                    <option value="{{ b.pk }}" {% if barbero_pk == b.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ b.usuario.get_full_name|default:b.usuario.username }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <label class="form-label">Desde</label>
+                <input type="date" name="desde" class="form-control" value="{{ fecha_desde }}"
+                       oninput="document.querySelector('[name=periodo]').value='custom'">
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <label class="form-label">Hasta</label>
+                <input type="date" name="hasta" class="form-control" value="{{ fecha_hasta }}"
+                       oninput="document.querySelector('[name=periodo]').value='custom'">
+            </div>
+            <div class="col-md-3 col-sm-6 d-flex gap-2">
+                <button type="submit" class="btn-cn-primary flex-fill"><i class="bi bi-funnel me-1"></i>FILTRAR</button>
+                <a href="{% url 'reportes:historial' %}" class="btn-cn-outline flex-fill text-decoration-none text-center" style="padding:0.5rem 0">LIMPIAR</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tarjetas resumen -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div style="font-family:var(--cn-font-mono);font-size:0.65rem;letter-spacing:2px;color:var(--cn-text-muted);text-transform:uppercase;margin-bottom:0.4rem">
+                <i class="bi bi-receipt me-1"></i>Ventas
+            </div>
+            <div class="stat-value" style="font-size:2rem">{{ total_ventas }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div style="font-family:var(--cn-font-mono);font-size:0.65rem;letter-spacing:2px;color:var(--cn-text-muted);text-transform:uppercase;margin-bottom:0.4rem">
+                <i class="bi bi-cash-coin me-1"></i>Ingresos Brutos
+            </div>
+            <div class="stat-value" style="font-size:1.6rem;color:var(--cn-accent)">Bs. {{ total_ingresos|floatformat:2 }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div style="font-family:var(--cn-font-mono);font-size:0.65rem;letter-spacing:2px;color:var(--cn-text-muted);text-transform:uppercase;margin-bottom:0.4rem">
+                <i class="bi bi-person-check me-1"></i>Comisiones Barberos
+            </div>
+            <div class="stat-value" style="font-size:1.6rem;color:#5aad5a">Bs. {{ total_comisiones|floatformat:2 }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div style="font-family:var(--cn-font-mono);font-size:0.65rem;letter-spacing:2px;color:var(--cn-text-muted);text-transform:uppercase;margin-bottom:0.4rem">
+                <i class="bi bi-building me-1"></i>Neto Local
+            </div>
+            <div class="stat-value" style="font-size:1.6rem;color:var(--cn-accent2)">Bs. {{ total_neto|floatformat:2 }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de ventas -->
+{% if ventas_data %}
+<div class="card-cn">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clock-history me-2"></i>DETALLE DE VENTAS</span>
+        <span style="font-family:var(--cn-font-mono);font-size:0.72rem;color:var(--cn-text-muted)">{{ total_ventas }} registro{{ total_ventas|pluralize:"s" }}</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table-cn w-100">
+                <thead>
+                    <tr>
+                        <th class="col-hide-sm">#</th>
+                        <th>Fecha</th>
+                        <th>Barbero</th>
+                        <th class="col-hide-sm">Cliente</th>
+                        <th>Ítems</th>
+                        <th>Total</th>
+                        <th class="col-hide-sm">Comisión</th>
+                        <th class="col-hide-sm">Método</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for v in ventas_data %}
+                <tr>
+                    <td class="col-hide-sm" style="font-family:var(--cn-font-mono);color:var(--cn-text-muted)">#{{ v.pk }}</td>
+                    <td>
+                        <span style="font-family:var(--cn-font-mono);color:var(--cn-accent);font-size:0.82rem">{{ v.fecha|date:"d/m/Y" }}</span><br>
+                        <span style="font-family:var(--cn-font-mono);font-size:0.72rem;color:var(--cn-text-muted)">{{ v.fecha|date:"H:i" }}</span>
+                    </td>
+                    <td>
+                        <strong>{{ v.barbero }}</strong><br>
+                        <span style="font-family:var(--cn-font-mono);font-size:0.68rem;color:#5aad5a">
+                            {{ v.comision_pct }}% · Bs. {{ v.comision|floatformat:2 }}
+                        </span>
+                    </td>
+                    <td class="col-hide-sm" style="color:var(--cn-text-muted);font-size:0.88rem">{{ v.cliente }}</td>
+                    <td>
+                        <!-- Lista de ítems colapsable -->
+                        <div style="font-size:0.82rem">
+                            {% for item in v.items|slice:":2" %}
+                            <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px">
+                                <span style="color:{% if item.tipo == 'servicio' %}var(--cn-accent){% else %}#5a8adf{% endif %};font-size:0.68rem">
+                                    {% if item.tipo == 'servicio' %}<i class="bi bi-scissors"></i>{% else %}<i class="bi bi-box"></i>{% endif %}
+                                </span>
+                                {{ item.descripcion }}
+                                <span style="font-family:var(--cn-font-mono);color:var(--cn-text-muted);font-size:0.72rem">×{{ item.cantidad }}</span>
+                            </div>
+                            {% endfor %}
+                            {% if v.items|length > 2 %}
+                            <div style="font-family:var(--cn-font-mono);font-size:0.68rem;color:var(--cn-text-muted)">
+                                +{{ v.items|length|add:"-2" }} más
+                            </div>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <span style="font-family:var(--cn-font-mono);color:var(--cn-accent);font-weight:700">Bs. {{ v.total|floatformat:2 }}</span>
+                        {% if v.descuento %}
+                        <br><span style="font-family:var(--cn-font-mono);font-size:0.68rem;color:var(--cn-accent2)">-Bs. {{ v.descuento|floatformat:2 }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="col-hide-sm">
+                        <div style="font-family:var(--cn-font-mono);font-size:0.78rem">
+                            <span style="color:#5aad5a">Bs. {{ v.comision|floatformat:2 }}</span><br>
+                            <span style="color:var(--cn-text-muted);font-size:0.68rem">Neto: Bs. {{ v.neto|floatformat:2 }}</span>
+                        </div>
+                    </td>
+                    <td class="col-hide-sm">
+                        <span style="font-family:var(--cn-font-mono);font-size:0.72rem;
+                            {% if v.metodo_pago == 'Efectivo' %}color:var(--cn-accent)
+                            {% elif v.metodo_pago == 'QR / Transferencia' %}color:#5a8adf
+                            {% else %}color:#a06adf{% endif %}">
+                            {% if v.metodo_pago == 'Efectivo' %}<i class="bi bi-cash me-1"></i>
+                            {% elif v.metodo_pago == 'QR / Transferencia' %}<i class="bi bi-qr-code me-1"></i>
+                            {% else %}<i class="bi bi-credit-card me-1"></i>{% endif %}
+                            {{ v.metodo_pago }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="{% url 'ventas:detalle' v.pk %}"
+                               class="btn-cn-outline" style="font-size:0.7rem;padding:0.25rem 0.5rem"
+                               title="Ver venta"><i class="bi bi-eye"></i></a>
+                            {% if v.cita_pk %}
+                            <a href="{% url 'citas:detalle' v.cita_pk %}"
+                               class="btn-cn-outline" style="font-size:0.7rem;padding:0.25rem 0.5rem;border-color:var(--cn-accent);color:var(--cn-accent)"
+                               title="Ver cita"><i class="bi bi-scissors"></i></a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                <!-- Fila expandida con todos los ítems (visible solo en móvil o al expandir) -->
+                {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr style="background:rgba(200,169,81,0.06)">
+                        <td colspan="5" class="col-hide-sm" style="font-family:var(--cn-font-display);letter-spacing:2px;padding:0.75rem 1rem;color:var(--cn-accent)">
+                            TOTALES
+                        </td>
+                        <td colspan="2" style="font-family:var(--cn-font-display);letter-spacing:2px;padding:0.75rem 1rem;color:var(--cn-accent)">
+                            TOTALES
+                        </td>
+                        <td style="font-family:var(--cn-font-mono);font-weight:700;color:var(--cn-accent);padding:0.75rem 1rem">
+                            Bs. {{ total_ingresos|floatformat:2 }}
+                        </td>
+                        <td class="col-hide-sm" style="font-family:var(--cn-font-mono);color:#5aad5a;padding:0.75rem 1rem">
+                            Bs. {{ total_comisiones|floatformat:2 }}
+                        </td>
+                        <td class="col-hide-sm"></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="card-cn">
+    <div class="card-body text-center py-5" style="color:var(--cn-text-muted)">
+        <div style="font-size:3rem;opacity:0.2;margin-bottom:1rem">☠</div>
+        <div style="font-family:var(--cn-font-mono);letter-spacing:2px">SIN VENTAS EN EL PERÍODO SELECCIONADO</div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
